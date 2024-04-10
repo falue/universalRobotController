@@ -71,37 +71,37 @@ int systemLEDbPin = 6;  // PWM
 
 
 // INITIAL VALUES
-bool toggleSwitch1 = false;
-bool toggleSwitch2 = false;
-bool toggleSwitch3 = false;
-bool toggleSwitch4 = false;
-bool toggleSwitch5 = false;
-bool toggleSwitch6 = false;
-bool userBtn1 = false;
-bool userBtn2 = false;
-bool userBtn3 = false;
-bool userBtn4 = false;
-bool userBtn5 = false;
-bool userBtn6 = false;
-bool userBtn7 = false;
-bool userBtn8 = false;
-bool userBtn9 = false;
-bool userBtn10 = false;
-bool userBtn11 = false;
-bool userBtn12 = false;
-bool userBtn13 = false;
-bool userBtn14 = false;
-bool userBtn15 = false;
-bool userBtn18 = false;
-bool userBtn19 = false;
+int toggleSwitch1 = 0;
+int toggleSwitch2 = 0;
+int toggleSwitch3 = 0;
+int toggleSwitch4 = 0;
+int toggleSwitch5 = 0;
+int toggleSwitch6 = 0;
+int userBtn1 = 0;
+int userBtn2 = 0;
+int userBtn3 = 0;
+int userBtn4 = 0;
+int userBtn5 = 0;
+int userBtn6 = 0;
+int userBtn7 = 0;
+int userBtn8 = 0;
+int userBtn9 = 0;
+int userBtn10 = 0;
+int userBtn11 = 0;
+int userBtn12 = 0;
+int userBtn13 = 0;
+int userBtn14 = 0;
+int userBtn15 = 0;
+int userBtn18 = 0;
+int userBtn19 = 0;
 int jostickLX = 0;
 int jostickLY = 0;
 int jostickLZ = 0;
-bool joyBtnL = false;
+int joyBtnL = 0;
 int jostickRX = 0;
 int jostickRY = 0;
 int jostickRZ = 0;
-bool joyBtnR = false;
+int joyBtnR = 0;
 int poti1 = 0;
 int poti2 = 0;
 int poti3 = 0;
@@ -112,9 +112,9 @@ int poti7 = 0;
 int poti8 = 0;
 int poti9 = 0;
 int poti10 = 0;
-bool sysBtn1 = false;
-bool sysBtn2 = false;
-bool sysBtn3 = false;
+int sysBtn1 = 0;
+int sysBtn2 = 0;
+int sysBtn3 = 0;
 
 // VAR VARS
 bool DEBUG = true;  // Prints to console
@@ -234,12 +234,20 @@ void blink(int times, int duration) {
 
 void loop() {
   readSignals();
+
   prepareSignals();
+
   if(DEBUG) {
     printSignals();
   }
-  sendSignal(transmitter1PpmPin, 0);
-  sendSignal(transmitter2PpmPin, 0);  // Maybe in parallel?
+
+  // First 12 values
+  int octave1[] = {jostickLX, jostickLY, jostickLZ, jostickRX, jostickRY, jostickRZ, joyBtnL, joyBtnR, toggleSwitch1, toggleSwitch2, toggleSwitch3, toggleSwitch4};
+  sendSignal(transmitter1PpmPin, octave1, 12);
+
+  // Next 12 values
+  int octave2[] = {};
+  sendSignal(transmitter2PpmPin, octave2, 0);  // Maybe in parallel?
 
   catchSystemButtons();
 
@@ -478,24 +486,24 @@ void readSignals() {
   userBtn18 = !digitalRead(userBtn18Pin);
   userBtn19 = !digitalRead(userBtn19Pin);
   // map(ch8, 0,1023,1000,2000);
-  jostickLX = analogRead(jostickLXPin);  // TRIM? analogRead(jostickLXPin) + map(analogRead(poti7Pin), 0, 1024, -512, 512)
-  jostickLY = analogRead(jostickLYPin);  // TRIM? analogRead(jostickLYPin) + map(analogRead(poti8Pin), 0, 1024, -512, 512)
-  jostickLZ = analogRead(jostickLZPin);
+  jostickLX = map(analogRead(jostickLXPin), 0,1023,1000,2000);  // TRIM? analogRead(jostickLXPin) + map(analogRead(poti7Pin), 0, 1024, -512, 512)
+  jostickLY = map(analogRead(jostickLYPin), 0,1023,1000,2000);  // TRIM? analogRead(jostickLYPin) + map(analogRead(poti8Pin), 0, 1024, -512, 512)
+  jostickLZ = map(analogRead(jostickLZPin), 0,1023,1000,2000);
   joyBtnL = !digitalRead(joyBtnLPin);
-  jostickRX = analogRead(jostickRXPin);  // TRIM? analogRead(jostickRXPin) + map(analogRead(poti9Pin), 0, 1024, -512, 512)
-  jostickRY = analogRead(jostickRYPin);  // TRIM? analogRead(jostickRYPin) + map(analogRead(poti10Pin), 0, 1024, -512, 512)
-  jostickRZ = analogRead(jostickRZPin);
+  jostickRX = map(analogRead(jostickRXPin), 0,1023,1000,2000);  // TRIM? analogRead(jostickRXPin) + map(analogRead(poti9Pin), 0, 1024, -512, 512)
+  jostickRY = map(analogRead(jostickRYPin), 0,1023,1000,2000);  // TRIM? analogRead(jostickRYPin) + map(analogRead(poti10Pin), 0, 1024, -512, 512)
+  jostickRZ = map(analogRead(jostickRZPin), 0,1023,1000,2000);
   joyBtnR = !digitalRead(joyBtnRPin);
-  poti1 = analogRead(poti1Pin);
-  poti2 = analogRead(poti2Pin);
-  poti3 = analogRead(poti3Pin);
-  poti4 = analogRead(poti4Pin);
-  poti5 = analogRead(poti5Pin);
-  poti6 = analogRead(poti6Pin);
-  poti7 = analogRead(poti7Pin);  // If used for trimming, ignore
-  poti8 = analogRead(poti8Pin);  // If used for trimming, ignore
-  poti9 = analogRead(poti9Pin);  // If used for trimming, ignore
-  poti10 = analogRead(poti10Pin);  // If used for trimming, ignore
+  poti1 = map(analogRead(poti1Pin), 0,1023,1000,2000);
+  poti2 = map(analogRead(poti2Pin), 0,1023,1000,2000);
+  poti3 = map(analogRead(poti3Pin), 0,1023,1000,2000);
+  poti4 = map(analogRead(poti4Pin), 0,1023,1000,2000);
+  poti5 = map(analogRead(poti5Pin), 0,1023,1000,2000);
+  poti6 = map(analogRead(poti6Pin), 0,1023,1000,2000);
+  poti7 = map(analogRead(poti7Pin), 0,1023,1000,2000);  // If used for trimming, ignore
+  poti8 = map(analogRead(poti8Pin), 0,1023,1000,2000);  // If used for trimming, ignore
+  poti9 = map(analogRead(poti9Pin), 0,1023,1000,2000);  // If used for trimming, ignore
+  poti10 = map(analogRead(poti10Pin), 0,1023,1000,2000);  // If used for trimming, ignore
   sysBtn1 = !digitalRead(sysBtn1Pin);
   sysBtn2 = !digitalRead(sysBtn2Pin);
   sysBtn3 = !digitalRead(sysBtn3Pin);
@@ -556,67 +564,24 @@ void printSignals() {
   Serial.println("");
 }
 
-void sendSignal(int transmitterPin, int data) {
+// void sendSignal(int transmitterPin, int* data) {
+void sendSignal(int transmitterPin, int* data, int dataSize) {
   // *** MAGIC ***
   // same function for both transmitters
 
-  /*
+  for(int i = 0; i < dataSize; i++) {
+    digitalWrite(transmitterPin, HIGH);
+    delayMicroseconds(500);
+    digitalWrite(transmitterPin, LOW);
+    // gap for the remaining period:
+    delayMicroseconds(data[i]-500);  // data[i] should be between 1000 and 2000
+  }
+
+  // Send sync pulse
   digitalWrite(transmitterPin, HIGH);
-  delayMicroseconds(500);         // ch1
-  digitalWrite(transmitterPin, LOW);
-  delayMicroseconds(ch1-500);     // gap for the remaining period
-  
-  digitalWrite(transmitterPin, HIGH);              
-  delayMicroseconds(500);         // ch2
-  digitalWrite(transmitterPin, LOW);     
-  delayMicroseconds(ch2-500);   
-  
-  digitalWrite(transmitterPin, HIGH);        
-  delayMicroseconds(500);         // ch3
-  digitalWrite(transmitterPin, LOW);      
-  delayMicroseconds(ch5-500);   
-
-  digitalWrite(transmitterPin, HIGH);
-  delayMicroseconds(500);         // ch4 
-  digitalWrite(transmitterPin, LOW);      
-  delayMicroseconds(ch6-500);   
-
-  digitalWrite(transmitterPin, HIGH);        
-  delayMicroseconds(500);         // ch5
-  digitalWrite(transmitterPin, LOW);        
-  delayMicroseconds(ch9-500);   
-
-  digitalWrite(transmitterPin, HIGH);          // ch6 
-  delayMicroseconds(500);
-  digitalWrite(transmitterPin, LOW);      
-  delayMicroseconds(ch10-500);
-
-  digitalWrite(transmitterPin, HIGH);          // ch7 
-  delayMicroseconds(500);
-  digitalWrite(transmitterPin, LOW);      
-  delayMicroseconds(swCombo1-500);
-
-  digitalWrite(transmitterPin, HIGH);          // ch8 
-  delayMicroseconds(500);
-  digitalWrite(transmitterPin, LOW);      
-  delayMicroseconds(swCombo2-500);
-
-  digitalWrite(transmitterPin, HIGH);          // ch9 
-  delayMicroseconds(500);
-  digitalWrite(transmitterPin, LOW);      
-  delayMicroseconds(swCombo3-500);
-
-  digitalWrite(transmitterPin, HIGH);          // ch10 
-  delayMicroseconds(500);
-  digitalWrite(transmitterPin, LOW);      
-  delayMicroseconds(swCombo4-500);     
-
-  digitalWrite(transmitterPin, HIGH);          // sync pulse
   delayMicroseconds(500);
   digitalWrite(transmitterPin, LOW);
-
-  // Longer gap to mark end of signal
-  delayMicroseconds(10000); */
+  delayMicroseconds(10000);  // Longer gap to mark end of signal
 }
 
 void catchSystemButtons() {
@@ -638,6 +603,6 @@ void catchSystemButtons() {
     // do something
   }
 
-  ..etc..
- */
+  */
+
 }
