@@ -85,3 +85,17 @@ void pulseCounter() {
 
 
 }
+
+// from chatGPT:
+/*
+  The decode function does the reverse of the encode function.
+  It takes an array of 9 integers (each representing the state of a group of 4 buttons)
+  and fills an array of 36 boolean values representing the state of each button.
+*/
+void decodeButtonStates(int encodedStates[9], bool buttonStates[36]) {
+  for (int i = 0; i < 9; i++) {
+    for (int j = 0; j < 4; j++) {
+      buttonStates[i * 4 + j] = (encodedStates[i] & (1 << j)) != 0;
+    }
+  }
+}

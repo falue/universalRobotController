@@ -40,7 +40,7 @@ int joyBtnLPin = 48;  // push button on top L joystick
 int jostickRXPin = A0;
 int jostickRYPin = A1;
 int jostickRZPin = A2;
-int joyBtnRPin = 49;  // push button on top R joystick
+int joyBtnRPin = 46; // push button on top R joystick  // was 49, but is hsorted somehow! solder wire;
 
 int poti1Pin = A6;   // Poti on top, left
 int poti2Pin = A7;   // Poti on top
@@ -511,6 +511,23 @@ void readSignals() {
 
 void prepareSignals() {
   // join var signals to one, map, ceil, floor, trim potis with other potis, etc
+  // + encodeButtonStates()
+}
+
+void encodeButtonStates(bool buttonStates[36], int encodedStates[9]) {
+  /* 
+    The encode function will take an array of 36 boolean values (true for pressed,
+    false for not pressed) and return an array of 9 integers (each representing
+    the state of a group of 4 buttons).
+  */
+  for (int i = 0; i < 9; i++) {
+    encodedStates[i] = 0;
+    for (int j = 0; j < 4; j++) {
+      if (buttonStates[i * 4 + j]) {
+        encodedStates[i] |= 1 << j;
+      }
+    }
+  }
 }
 
 void printSignals() {
@@ -564,7 +581,6 @@ void printSignals() {
   Serial.println("");
 }
 
-// void sendSignal(int transmitterPin, int* data) {
 void sendSignal(int transmitterPin, int* data, int dataSize) {
   // *** MAGIC ***
   // same function for both transmitters
