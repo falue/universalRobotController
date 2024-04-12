@@ -5735,7 +5735,7 @@
     (property "Value" "SYS RGB LED" (at 232.41 15.24 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "LED_THT:LED_D5.0mm-4_RGB" (at 232.41 26.67 0)
+    (property "Footprint" "LED_THT:LED_D5.0mm-4_RGB_Wide_Pins" (at 232.41 26.67 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (at 232.41 26.67 0)
