@@ -236,10 +236,10 @@ void loop() {
   }
 
   // First 12 values
-  // int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, joyBtnL, joyBtnR, toggleSwitch1, toggleSwitch2, toggleSwitch3, toggleSwitch4};
-  // sendSignal(transmitter1PpmPin, octave1, 12);
-  int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, joyBtnL, joyBtnR, toggleSwitch1, toggleSwitch2};
-  sendSignal(transmitter1PpmPin, octave1, 10);
+  int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, joyBtnL, joyBtnR, toggleSwitch1, toggleSwitch2, toggleSwitch3, toggleSwitch4};
+  sendSignal(transmitter1PpmPin, octave1, 12);
+  //// int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, joyBtnL, joyBtnR, toggleSwitch1, toggleSwitch2};
+  //// sendSignal(transmitter1PpmPin, octave1, 10);
 
   // Reduced channels
   ///// int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, joyBtnL};
@@ -389,13 +389,15 @@ void printSignals() {
 void sendSignal(int transmitterPin, int* data, int dataSize) {
   // *** MAGIC ***
   // same function for both transmitters
+  int gap = 500;  // 500 according to james bruton
+  int longGap = 1000;  // 10'000 according to james bruton, but its very slow and 1000 works too?!
 
   for(int i = 0; i < dataSize; i++) {
     digitalWrite(transmitterPin, HIGH);
-    delayMicroseconds(500);
+    delayMicroseconds(gap);
     digitalWrite(transmitterPin, LOW);
     // gap for the remaining period:
-    delayMicroseconds(data[i]-500);  // data[i] should be between 1000 and 2000
+    delayMicroseconds(data[i]-gap);  // data[i] should be between 1000 and 2000
   }
 
   if(dataSize > 0) {
@@ -403,9 +405,9 @@ void sendSignal(int transmitterPin, int* data, int dataSize) {
     if(transmitterPin == transmitter2PpmPin) analogWrite(tx2LEDPin, ledBrightness/2);
     // Send sync pulse
     digitalWrite(transmitterPin, HIGH);
-    delayMicroseconds(500);
+    delayMicroseconds(gap);
     digitalWrite(transmitterPin, LOW);
-    delayMicroseconds(10000);  // Longer gap to mark end of signal
+    delayMicroseconds(longGap);  // Longer gap to mark end of signal
   }
 }
 
