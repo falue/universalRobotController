@@ -32,9 +32,9 @@ int jostickRX = 1500;
 int jostickRY = 1500;
 int jostickRZ = 1500;
 int joyBtnL = 1500;
-int ch8 = 1500;
-int ch9 = 1500;
-int ch10 = 1500;
+int joyBtnR = 1500;
+int toggleSwitch1 = 1500;
+int toggleSwitch2 = 1500;
 
 // Smoothing servos
 float smoothedValueX = float(jostickRX);
@@ -82,9 +82,9 @@ void loop() {
     jostickRY = IBus.readChannel(4);   // get latest value for servo channel 5
     jostickRZ = IBus.readChannel(5);   // get latest value for servo channel 6
     joyBtnL = IBus.readChannel(6);     // get latest value for servo channel 7
-    ch8 = IBus.readChannel(7);         // get latest value for servo channel 8  // Garbage data (-31781)
-    ch9 = IBus.readChannel(8);         // get latest value for servo channel 9  // Garbage data (-31781)
-    ch10 = IBus.readChannel(9);        // get latest value for servo channel 10 // Garbage data (-31781)
+    joyBtnR = IBus.readChannel(7);         // get latest value for servo channel 8  // Garbage data (-31781)
+    toggleSwitch1 = IBus.readChannel(8);         // get latest value for servo channel 9  // Garbage data (-31781)
+    toggleSwitch2 = IBus.readChannel(9);        // get latest value for servo channel 10 // Garbage data (-31781)
   } else {
     fakeJoystickValues();
   }
@@ -186,12 +186,12 @@ void debugPrints() {
   Serial.print(jostickRZ);
   Serial.print("\tjoyBtnL: ");
   Serial.print(joyBtnL);
-  Serial.print("\tch8: ");
-  Serial.print(ch8);
-  Serial.print("\tch9: ");
-  Serial.print(ch9);
-  Serial.print("\tch10: ");
-  Serial.print(ch10);
+  Serial.print("\tjoyBtnR: ");
+  Serial.print(joyBtnR);
+  Serial.print("\ttoggleSwitch1: ");
+  Serial.print(toggleSwitch1);
+  Serial.print("\ttoggleSwitch2: ");
+  Serial.print(toggleSwitch2);
   Serial.println();
 }
 
