@@ -1,90 +1,345 @@
-// measures between rising edge of each pulse to the next
+#include <IBusBM.h>
+#include <Servo.h>
 
-const int interruptPin = 2; // pin to use for the interrupt
-unsigned long pulseStart = 0; // variable to store the time when the pulse starts
-unsigned long distance = 0; // variable to measure the time between two rising edges.
+IBusBM IBus; // IBus object
 
-unsigned long currentMillis;
-long previousMillis = 0;    // set up timers
-long interval = 500;        // time constant for timer
+Servo servoX;
+Servo servoY;
 
-int counter = 0;
-int ch1;
-int ch2;
-int ch3;
-int ch4;
-int ch5;
-int ch6;
+// Options
+bool enableHeadMovements = false;
+bool enableDrive = false;
+bool fakeRemoteInputs = false;
 
-int flag = 0;
+// Servos
+int servoXPin = 5;
+int servoYPin = 6;
+
+// DC Motors
+int directionPinA = 13;  // 12   CHANGES DIRECTION WHEN UPLAODING because 13 = built in LED
+int pwmPinA = 11;  // 3
+int brakePinA =  8;  // 9
+
+int directionPinB = 12;  // 13;
+int pwmPinB = 3;  // 11;
+int brakePinB =9;  //  8;
+
+// Remote channels
+int joystickLX = 1500;
+int joystickLY = 1500;
+int joystickLZ = 1500;
+int jostickRX = 1500;
+int jostickRY = 1500;
+int jostickRZ = 1500;
+int joyBtnL = 1500;
+int ch8 = 1500;
+int ch9 = 1500;
+int ch10 = 1500;
+
+// Smoothing servos
+float smoothedValueX = float(jostickRX);
+float smoothedValueY = float(jostickRY);
+float smoothedValueZ = float(jostickRZ);
+
+// Limit the max speed of the robot
+// 0-254 *or* 0-100. This is up for dabate. The latter is mentioned in the docs of the
+// motor shield r3 but a weird thing, usually things like that are 0-254.
+int maxSpeed = 100;
+
+// fakeRemoteInputs
+int directionX = 1, directionY = 1, directionZ = 1;
+int step = 2;
+const int startValue = 1000;
+const int endValue = 2000;
 
 void setup() {
-  // initialize serial communication
-  Serial.begin(115200);
+  delay(1666);
 
-  // set the interrupt pin as an input and enable the pull-up resistor
-  pinMode(interruptPin, INPUT_PULLUP);
+  Serial.begin(115200);   // remove comment from this line if you change the Serial port in the next line
+  IBus.begin(Serial1);    // change to Serial1 = D0 (or Serial2 or 3 for on ard mega or so) port when required
 
-  // attach the interrupt function to the interrupt pin
-  attachInterrupt(digitalPinToInterrupt(interruptPin), pulseCounter, FALLING);
+  if(enableHeadMovements) {
+    servoX.attach(servoXPin);
+    servoY.attach(servoYPin);
+  }
+
+  // Define motor pins
+  pinMode(directionPinA, OUTPUT);
+  pinMode(pwmPinA, OUTPUT);
+  pinMode(brakePinA, OUTPUT);
+
+  pinMode(directionPinB, OUTPUT);
+  pinMode(pwmPinB, OUTPUT);
+  pinMode(brakePinB, OUTPUT);
 }
 
 void loop() {
+  if(!fakeRemoteInputs) {
+    joystickLX = IBus.readChannel(2);  // get latest value for servo channel 2  // Somehow, these three channels are reordered by the TX or (!) RX
+    joystickLY = IBus.readChannel(0);  // get latest value for servo channel 0  // Somehow, these three channels are reordered by the TX or (!) RX
+    joystickLZ = IBus.readChannel(1);  // get latest value for servo channel 1  // Somehow, these three channels are reordered by the TX or (!) RX
+    jostickRX = IBus.readChannel(3);   // get latest value for servo channel 4
+    jostickRY = IBus.readChannel(4);   // get latest value for servo channel 5
+    jostickRZ = IBus.readChannel(5);   // get latest value for servo channel 6
+    joyBtnL = IBus.readChannel(6);     // get latest value for servo channel 7
+    ch8 = IBus.readChannel(7);         // get latest value for servo channel 8  // Garbage data (-31781)
+    ch9 = IBus.readChannel(8);         // get latest value for servo channel 9  // Garbage data (-31781)
+    ch10 = IBus.readChannel(9);        // get latest value for servo channel 10 // Garbage data (-31781)
+  } else {
+    fakeJoystickValues();
+  }
 
-        Serial.print(ch1);
-        Serial.print(" , ");
-        Serial.print(ch2);
-        Serial.print(" , ");
-        Serial.print(ch3);
-        Serial.print(" , ");
-        Serial.print(ch4);
-        Serial.print(" , ");
-        Serial.print(ch5);
-        Serial.print(" , ");
-        Serial.println(ch6);
+  if(enableDrive) {
+    drive(joystickLX, joystickLY, joystickLZ);
+  }
 
-        delay(10);
+  if(enableHeadMovements) {
+    headMovement(jostickRX, jostickRY, jostickRZ);
+  }
 
+  debugPrints();
+
+  delay(5);  //?
 }
 
-// interrupt function to count the pulse width
-void pulseCounter() {
-  
-      distance = micros() - pulseStart;  
-      pulseStart = micros();
+int phase = 0;
 
-      if (distance < 5000) {
-        counter = counter + 1;        
+void fakeJoystickValues() {
+    if(phase == 0 || phase == 3 || phase >= 4) {
+      // Update Y
+      if (joystickLY >= endValue || joystickLY <= startValue) {
+          directionY *= -1;  // Reverse the direction
       }
-      else if (distance > 5000 || counter >=7) {
-        counter = 0;
-      }      
-
-      // put values in variables
-       
-      if (counter == 1) {
-          ch1 = distance;
-      }
-      else if (counter == 2) {
-          ch2 = distance;
-      }
-      else if (counter == 3) {
-          ch3 = distance;
-      }
-      else if (counter == 4) {
-          ch4 = distance;
-      }
-      else if (counter == 5) {
-          ch5 = distance;
-      }
-      else if (counter == 6) {
-          ch6 = distance;
-      }
-
+      joystickLY += directionY * step;
       
+      if(joystickLY <= startValue) {
+        joystickLY = 1500;
+        directionY = 1;
+        phase++;
+        delay(2000);
+      }
+    }
 
+    if(phase == 1 || phase == 3 || phase >= 4) {
+      // Update X
+      if (joystickLX >= endValue || joystickLX <= startValue) {
+          directionX *= -1;  // Reverse the direction
+      }
+      joystickLX += directionX * step;
 
+      if(joystickLX <= startValue) {
+        joystickLX = 1500;
+        directionX = 1;
+        phase++;
+        delay(2000);
+      }
+    }
+
+    if(phase == 2 || phase >= 4) {
+      // Update Z
+      if (joystickLZ >= endValue || joystickLZ <= startValue) {
+          directionZ *= -1;  // Reverse the direction
+      }
+      joystickLZ += directionZ * step;
+      
+      if(joystickLZ <= startValue) {
+        joystickLZ = 1500;
+        directionZ = 1;
+        phase++;
+        delay(2000);
+      }
+    }
+
+    String dirArrow = "";
+
+    if(joystickLY > 1500) dirArrow += "▲";
+    if(joystickLY < 1500) dirArrow += "▼";
+
+    if(joystickLX > 1500) dirArrow += "►";
+    if(joystickLX < 1500) dirArrow += "◄";
+
+    if(joystickLZ > 1500) dirArrow += "⤵";
+    if(joystickLZ < 1500) dirArrow += "⤴";
+
+    // Output the current values and mixes to the Serial Monitor
+    Serial.print("LX: "); Serial.print(joystickLX);
+    Serial.print("\tLY: "); Serial.print(joystickLY);
+    Serial.print("\tLZ: "); Serial.print(joystickLZ);
+    Serial.print("\tsteering: ");
+    Serial.print(dirArrow);
+    Serial.println("");
 }
+
+
+void debugPrints() {
+  Serial.print("\tjoystickLX: ");
+  Serial.print(joystickLX);
+  Serial.print("\tjoystickLY: ");
+  Serial.print(joystickLY);
+  Serial.print("\tjoystickLZ: ");
+  Serial.print(joystickLZ);
+  Serial.print("\tjostickRX: ");
+  Serial.print(jostickRX);
+  Serial.print("\tjostickRY: ");
+  Serial.print(jostickRY);
+  Serial.print("\tjostickRZ: ");
+  Serial.print(jostickRZ);
+  Serial.print("\tjoyBtnL: ");
+  Serial.print(joyBtnL);
+  Serial.print("\tch8: ");
+  Serial.print(ch8);
+  Serial.print("\tch9: ");
+  Serial.print(ch9);
+  Serial.print("\tch10: ");
+  Serial.print(ch10);
+  Serial.println();
+}
+
+// can you change this function so that the values are real "mixed together" - 
+/* int calculateMotorSpeed(int Y, int X, int Z, char motorSide) {
+    int mixer = 0;
+    if (motorSide == 'L') {
+        mixer = Y - (Z + X) / 2;  // Baseversion: Y - Z + X
+    } else if (motorSide == 'R') {
+        mixer = Y + (Z - X) / 2;  // Baseversion: Y + Z - X
+    }
+    return mixer;
+}
+
+int calculateMotorSpeed_OLD(int Y, int X, int Z, char motorSide) {
+    int val;
+    if (motorSide == 'L') {
+        val = Y - abs(X)/2 - abs(Z)/2;  // Reduce left motor speed when turning right
+    } else {
+        val = Y + abs(X)/2 + abs(Z)/2;  // Reduce right motor speed when turning left
+    }
+    return val > 100 ? 100 : val;
+} */
+
+// Y stick does nothing for half the way
+int calculateMotorSpeed(int Y, int X, int Z, char motorSide) {
+  // Scaling factor for the turn influence
+  // 1=ignore Y when steering
+  // 0=ignore X when driving
+  // 0.5=add half X to Y
+  float turnScaleFactor = 0.5;  // COULD BE A POTI FROM THE REMOTE FROM 0.2-0.8 OR SO
+  // Compute the preliminary motor speeds for differential steering
+  int motorSpeedLeft = Y + X * turnScaleFactor;
+  int motorSpeedRight = Y - X * turnScaleFactor;
+
+  // somehow map the values - scale the smaller one if the bigger one is > maxSpeed
+
+  // Return the appropriate motor speed based on the side
+  if(motorSpeedLeft < 0 && motorSpeedRight < 0) {
+    if (motorSide == 'R') {  // invert if backwards
+      return constrain(motorSpeedLeft, -maxSpeed, maxSpeed);
+    } else {
+      return constrain(motorSpeedRight, -maxSpeed, maxSpeed);
+    }
+
+  } else {
+    if (motorSide == 'L') {
+      return constrain(motorSpeedLeft, -maxSpeed, maxSpeed);
+    } else {
+      return constrain(motorSpeedRight, -maxSpeed, maxSpeed);
+    }
+  }
+}
+
+void drive(int X, int Y, int Z) {
+  /* Terack movement */
+  // Values between 1000 and 2000
+  X = clampMap(X, 1000,2000, -maxSpeed,maxSpeed);
+  Y = clampMap(Y, 1000,2000, -maxSpeed,maxSpeed);
+  Z = clampMap(Z, 1000,2000, maxSpeed,-maxSpeed);  // invert Z axis for some reason
+
+  // static: XYZ == 500
+  bool idle = isInDeadZone(X, 0, 1) && isInDeadZone(Y, 0, 1) && isInDeadZone(Z, 0, 1);
+  // if not static, release clamps
+
+  if(idle) {
+    // Engange breaks
+    digitalWrite(brakePinA, HIGH);
+    digitalWrite(brakePinB, HIGH);
+    analogWrite(pwmPinA, 0);  // 0-100%, not sure if necessary?
+    analogWrite(pwmPinB, 0);  // 0-100%, not sure if necessary?
+  } else {
+    // Release breaks
+    digitalWrite(brakePinA, LOW);
+    digitalWrite(brakePinB, LOW);
+
+    // Mix X Y Z together
+    int motorL = calculateMotorSpeed(Y, X, Z, 'L');
+    int motorR = calculateMotorSpeed(Y, X, Z, 'R');
+    // Got values between -maxSpeed and maxSpeed (254)
+
+    // Set direction
+    digitalWrite(directionPinA, motorL < 0);  // LOW to reverse
+    digitalWrite(directionPinB, motorR < 0);  // LOW to reverse
+
+    Serial.print("\tmotorL: ");
+    Serial.print(abs(motorL));
+    Serial.print("\tdir_motorL: ");
+    Serial.print(motorL < 0 ? "back" : "forward");
+    Serial.print("\tmotorR: ");
+    Serial.print(abs(motorR));
+    Serial.print("\tdir_motorR: ");
+    Serial.print(motorR < 0 ? "back" : "forward");
+    Serial.println();
+
+    // Z is inverted
+    // values are over 100 when mixed together
+
+    // Clamp?
+    // motorL = abs(motorL) > maxSpeed ? maxSpeed : abs(motorL);
+    // motorL = abs(motorR) > maxSpeed ? maxSpeed : abs(motorR);
+
+    // Power to the motors
+    analogWrite(pwmPinA, abs(motorL));  // abs makes out of -50 +50
+    analogWrite(pwmPinB, abs(motorL));  // abs makes out of -50 +50
+  }
+}
+
+bool isInDeadZone(int value, int idle, int deadzone) {
+  bool isBelow = value < idle - deadzone/2;
+  bool isAbove = value > idle + deadzone/2;
+  return !(isBelow || isAbove);
+}
+
+// Function to calculate exponential moving average for a given sensor value
+float exponentialMovingAverage(float newValue, float& smoothedValue, float smoothingFactor) {
+  // smoothingFactor: 1=no smoothing; 0.0001 = much please yes smoothing but slow
+  smoothedValue = (newValue * smoothingFactor) + (smoothedValue * (1 - smoothingFactor));
+  return smoothedValue;
+}
+
+void headMovement(int X, int Y, int Z) {
+  /* Servo Head movement */
+  // Values between 1000 and 2000
+  // No matter if the stick is leaning halfway in any direction, but its turned
+  //   fully, always take the bigger (or smaller) value of Z
+  /*if(abs(Z-1500) > abs(X-1500)) {
+    X = Z < 1500 ? min(X, Z) : max(X, Z);
+  }*/
+
+  // Smooth out the signal
+  float currentSmoothedX = exponentialMovingAverage(X, smoothedValueX, 0.1);
+  float currentSmoothedY = exponentialMovingAverage(Y, smoothedValueY, 0.1);
+  // float currentSmoothedZ = exponentialMovingAverage(Z, smoothedValueZ, 0.1);
+
+  // Turning head X; ~120-170° range
+  servoX.write(map(currentSmoothedX, 1000, 2000, 120, 170));
+
+  // Bending head Y; ~170 (geradeausschauen) - 150° (runterschauen) range
+  servoY.write(map(currentSmoothedY, 1000, 2000, 170, 150));
+}
+
+int clampMap(int value, int valueFrom, int valueTo, int from, int to) {
+  if(value < valueFrom) value = valueFrom;
+  if(value > valueTo) value = valueTo;
+  return map(value, valueFrom, valueTo, from, to);
+}
+
 
 // from chatGPT:
 /*
