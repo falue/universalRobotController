@@ -13,7 +13,7 @@ to set some settings on the receiver is very buggy, buy the
 [OrangeTX Program box](https://hobbyking.com/en_us/orangerx-program-box-for-r620x-r1220x-v3-rr12rdts-receivers.html?___store=en_us).
 1. Connect the jumper to power the receiver from the program box to pin 1 and 2.
 2. Set the "out type" from default "SBus" to "iBUS"
-3. ~(optional) Set the *FailSafe" to "no packet" to be able to detect signal loss on the receiver~ Doesn't work!
+3. Set the *FailSafe" to send "1500" on all channels when losing connection; to be able to detect signal loss on the receiver
 
 
 ## OrangeRx Binding Process
