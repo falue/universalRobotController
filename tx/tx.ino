@@ -124,8 +124,8 @@ bool DEBUG = true;  // Prints to console, makes stuff slow, kinda
 int ledBrightness = 6;
 
 void setup() {
-  Serial.println("==============================");
   delay(1000);
+  Serial.println("==============================");
   Serial.begin(115200);
   Serial.println("");
   Serial.println("Setup");
@@ -185,26 +185,33 @@ void setup() {
   pinMode(systemLEDgPin, OUTPUT);
   pinMode(systemLEDbPin, OUTPUT);
 
-  // LED tests
-  analogWrite(tx1LEDPin, ledBrightness/2);
-  delay(333);
-  analogWrite(tx2LEDPin, ledBrightness/2);
-  sysLED(ledBrightness,0,0);
-  delay(333);
-  sysLED(0,ledBrightness,0);
-  delay(333);
-  sysLED(0,0,ledBrightness);
-  delay(333);
-  sysLED(ledBrightness,ledBrightness,ledBrightness);
-  delay(333);
-  sysLED(0,0,0);
-  delay(333);
-  analogWrite(tx1LEDPin, 0);
-  delay(333);
-  analogWrite(tx2LEDPin, 0);
-  blink(4,333);
-  delay(333);
-  sysLED(0,0,ledBrightness);
+  // LED tests - jump if pressing sysbtn-3
+  if(digitalRead(sysBtn3Pin)) {
+    Serial.println("LED tests..");
+    analogWrite(tx1LEDPin, ledBrightness/2);
+    delay(333);
+    analogWrite(tx2LEDPin, ledBrightness/2);
+    sysLED(ledBrightness,0,0);
+    delay(333);
+    sysLED(0,ledBrightness,0);
+    delay(333);
+    sysLED(0,0,ledBrightness);
+    delay(333);
+    sysLED(ledBrightness,ledBrightness,ledBrightness);
+    delay(333);
+    sysLED(0,0,0);
+    delay(333);
+    analogWrite(tx1LEDPin, 0);
+    delay(333);
+    analogWrite(tx2LEDPin, 0);
+    blink(4,333);
+    delay(333);
+    sysLED(0,0,ledBrightness);
+  } else {
+    Serial.println("LED tests - jumped");
+    sysLED(0,0,ledBrightness);
+
+  }
   
   Serial.println("Setup completed.");
   Serial.println("==============================");
@@ -224,28 +231,23 @@ void blink(int times, int duration) {
     delay(duration/3);
   }
 }
-  
 
 void loop() {
-  readSignals();
-
-  prepareSignals();
+  readInputs();
 
   if(DEBUG) {
     printSignals();
   }
 
-  // First 12 values
-  int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, joyBtnL, joyBtnR, toggleSwitch1, toggleSwitch2, toggleSwitch3, toggleSwitch4};
-  sendSignal(transmitter1PpmPin, octave1, 12);
-  //// int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, joyBtnL, joyBtnR, toggleSwitch1, toggleSwitch2};
-  //// sendSignal(transmitter1PpmPin, octave1, 10);
+  // Values for first transmitter box
+  int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, joyBtnL, joyBtnR, toggleSwitch1, toggleSwitch2};
+  sendSignal(transmitter1PpmPin, octave1, 10);
 
-  // Reduced channels
-  ///// int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, joyBtnL};
-  ///// sendSignal(transmitter1PpmPin, octave1, 7);
+  // Transmitter & receiver should work with 12 channels but cannot get it to transmit (or receive?) properly
+  // int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, joyBtnL, joyBtnR, toggleSwitch1, toggleSwitch2, toggleSwitch3, toggleSwitch4};
+  // sendSignal(transmitter1PpmPin, octave1, 12);
 
-  // Next 12 values
+  // Values for second transmitter box
   int octave2[] = {};
   sendSignal(transmitter2PpmPin, octave2, 0);  // Maybe in parallel?
 
@@ -253,7 +255,7 @@ void loop() {
 }
          
 
-void readSignals() {
+void readInputs() {
   toggleSwitch1 = 1000 + !digitalRead(toggleSwitch1Pin)*1000; // Get 1000 for false, 2000 for true;
   toggleSwitch2 = 1000 + !digitalRead(toggleSwitch2Pin)*1000; // Get 1000 for false, 2000 for true;
   toggleSwitch3 = 1000 + !digitalRead(toggleSwitch3Pin)*1000; // Get 1000 for false, 2000 for true;
@@ -308,14 +310,11 @@ void readSignals() {
   poti8 = map(analogRead(poti8Pin), 0,1023,1000,2000);  // If used for trimming, ignore
   poti9 = map(analogRead(poti9Pin), 0,1023,1000,2000);  // If used for trimming, ignore
   poti10 = map(analogRead(poti10Pin), 0,1023,1000,2000);  // If used for trimming, ignore
+
+  // For use on the remote itself
   sysBtn1 = !digitalRead(sysBtn1Pin);
   sysBtn2 = !digitalRead(sysBtn2Pin);
   sysBtn3 = !digitalRead(sysBtn3Pin);
-}
-
-void prepareSignals() {
-  // join var signals to one, map, ceil, floor, etc
-  // + encodeButtonStates()
 }
 
 void encodeButtonStates(bool buttonStates[36], int encodedStates[9]) {
@@ -389,7 +388,7 @@ void printSignals() {
 void sendSignal(int transmitterPin, int* data, int dataSize) {
   // *** MAGIC ***
   // same function for both transmitters
-  int gap = 500;  // 500 according to james bruton
+  int gap = 500;
   int longGap = 1000;  // 10'000 according to james bruton, but its very slow and 1000 works too?!
 
   for(int i = 0; i < dataSize; i++) {
@@ -417,6 +416,7 @@ void catchSystemButtons() {
   */
 
   if(sysBtn1) {
+    // Block all inputs / outputs
     analogWrite(systemLEDPin, ledBrightness);
     sysLED(ledBrightness,0,0);
     // wait for btn release
@@ -425,9 +425,28 @@ void catchSystemButtons() {
       delay(10);
       // interrupts RC signal transmission
     }
+
+    // Wait for pressing btn again
+    while(digitalRead(sysBtn1Pin)) {
+      Serial.println("Blocking all signals - press sysBtn1 again");
+      // Blink led every ~1s
+      if(millis() % 1000 >= 500) {
+        sysLED(255,0,0);
+      } else {
+        sysLED(0,0,0);
+      }
+      delay(10);
+      // interrupts RC signal transmission
+    }
+    sysLED(ledBrightness,ledBrightness,ledBrightness);
+
+    while(!digitalRead(sysBtn1Pin)) {
+      Serial.println("Wait for release sysBtn1");
+      delay(10);
+      // interrupts RC signal transmission
+    }
     analogWrite(systemLEDPin, 0);
     sysLED(0,0,ledBrightness);
-    // do something
   }
 
   if(sysBtn2) {
