@@ -317,22 +317,6 @@ void readInputs() {
   sysBtn3 = !digitalRead(sysBtn3Pin);
 }
 
-void encodeButtonStates(bool buttonStates[36], int encodedStates[9]) {
-  /* 
-    The encode function will take an array of 36 boolean values (true for pressed,
-    false for not pressed) and return an array of 9 integers (each representing
-    the state of a group of 4 buttons).
-  */
-  for (int i = 0; i < 9; i++) {
-    encodedStates[i] = 0;
-    for (int j = 0; j < 4; j++) {
-      if (buttonStates[i * 4 + j]) {
-        encodedStates[i] |= 1 << j;
-      }
-    }
-  }
-}
-
 void printSignals() {
   Serial.print(joystickLX); Serial.print("\t");
   Serial.print(joystickLY); Serial.print("\t");
@@ -428,7 +412,7 @@ void catchSystemButtons() {
 
     // Wait for pressing btn again
     while(digitalRead(sysBtn1Pin)) {
-      Serial.println("Blocking all signals - press sysBtn1 again");
+      Serial.println("Halting all signals - press sysBtn1 again");
       // Blink led every ~1s
       if(millis() % 1000 >= 500) {
         sysLED(255,0,0);
