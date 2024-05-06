@@ -25,7 +25,7 @@ void setup() {
   // Print all the available serial ports
   printArray(Serial.list());
   
-  String portName = Serial.list()[8]; // Change this to your Arduino port
+  String portName = Serial.list()[7]; // Change this to your Arduino port
   myPort = new Serial(this, portName, 115200);
   myPort.bufferUntil('\n');          // Buffer until a newline character
   
