@@ -59,10 +59,9 @@ void setup() {
   // next line somehow makes servo twitch
   IBus.begin(Serial1, IBUSBM_NOTIMER);    // change to Serial1 = D0 (or Serial2 or 3 for on ard mega or so) port when required
 
-  if(enableHeadMovements) {
-    servoX.attach(servoXPin);
-    servoY.attach(servoYPin);
-  }
+  // Attach head servos
+  servoX.attach(servoXPin);
+  servoY.attach(servoYPin);
 
   // Define motor pins
   pinMode(directionPinA, OUTPUT);
@@ -86,7 +85,12 @@ void loop() {
   }
 
   if(enableHeadMovements) {
+    servoX.attach(servoXPin);
+    servoY.attach(servoYPin);
     headMovement(jostickRX, jostickRY, jostickRZ);
+  } else {
+    servoX.detach();
+    servoY.detach();
   }
 
   debugPrints();
