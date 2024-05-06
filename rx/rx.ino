@@ -56,7 +56,8 @@ void setup() {
   delay(1666);
 
   Serial.begin(115200);   // remove comment from this line if you change the Serial port in the next line
-  IBus.begin(Serial1);    // change to Serial1 = D0 (or Serial2 or 3 for on ard mega or so) port when required
+  // next line somehow makes servo twitch
+  IBus.begin(Serial1, IBUSBM_NOTIMER);    // change to Serial1 = D0 (or Serial2 or 3 for on ard mega or so) port when required
 
   if(enableHeadMovements) {
     servoX.attach(servoXPin);
@@ -75,16 +76,7 @@ void setup() {
 
 void loop() {
   if(!fakeRemoteInputs) {
-    joystickLX = IBus.readChannel(2);  // get latest value for servo channel 2  // Somehow, these three channels are reordered by the TX or (!) RX
-    joystickLY = IBus.readChannel(0);  // get latest value for servo channel 0  // Somehow, these three channels are reordered by the TX or (!) RX
-    joystickLZ = IBus.readChannel(1);  // get latest value for servo channel 1  // Somehow, these three channels are reordered by the TX or (!) RX
-    jostickRX = IBus.readChannel(3);   // get latest value for servo channel 4
-    jostickRY = IBus.readChannel(4);   // get latest value for servo channel 5
-    jostickRZ = IBus.readChannel(5);   // get latest value for servo channel 6
-    joyBtnL = IBus.readChannel(6);     // get latest value for servo channel 7
-    joyBtnR = IBus.readChannel(7);         // get latest value for servo channel 8  // Garbage data (-31781)
-    toggleSwitch1 = IBus.readChannel(8);         // get latest value for servo channel 9  // Garbage data (-31781)
-    toggleSwitch2 = IBus.readChannel(9);        // get latest value for servo channel 10 // Garbage data (-31781)
+    readChannels();
   } else {
     fakeJoystickValues();
   }
@@ -99,7 +91,7 @@ void loop() {
 
   debugPrints();
 
-  delay(5);  //?
+  // delay(5);  do not delay because IBus.loop() must be called as fast as possible
 }
 
 int phase = 0;
@@ -170,6 +162,67 @@ void fakeJoystickValues() {
     Serial.println("");
 }
 
+void readChannels() {
+  // Call internal loop function to update the communication to the receiver.
+  //   Needed if IBus.begin(); is called with second parameter "IBUSBM_NOTIMER"
+  IBus.loop();
+
+  // Get the latest IBus data from cached data
+  joystickLX = IBus.readChannel(2);  // get latest value for servo channel 2  // Somehow, these three channels are reordered by the TX or (!) RX
+  joystickLY = IBus.readChannel(0);  // get latest value for servo channel 0  // Somehow, these three channels are reordered by the TX or (!) RX
+  joystickLZ = IBus.readChannel(1);  // get latest value for servo channel 1  // Somehow, these three channels are reordered by the TX or (!) RX
+  jostickRX = IBus.readChannel(3);   // get latest value for servo channel 4
+  jostickRY = IBus.readChannel(4);   // get latest value for servo channel 5
+  jostickRZ = IBus.readChannel(5);   // get latest value for servo channel 6
+
+  /// WIP
+  /// MAYBE GO BACK TO LAST COMMIT because fuck it
+  /*
+  bool* decodedSwitches = decodeButtons(IBus.readChannel(6));  // toggleSwitch1,toggleSwitch2,toggleSwitch3,toggleSwitch4
+  bool* decodedButtons1 = decodeButtons(IBus.readChannel(7));  // joyBtnL,joyBtnR,userBtn1,userBtn2
+  bool* decodedButtons2 = decodeButtons(IBus.readChannel(8));  // userBtn3,userBtn4,userBtn5,userBtn6
+  Serial.print(IBus.readChannel(6));
+  Serial.print(", ");
+  Serial.print(IBus.readChannel(7));
+  Serial.print(", ");
+  Serial.print(IBus.readChannel(8));
+  Serial.print(", joyBtnL: ");
+
+  enableDrive = decodedSwitches[0];
+  enableHeadMovements = decodedSwitches[1];
+  toggleSwitch3 = decodedSwitches[2];
+  toggleSwitch4 = decodedSwitches[3];
+  joyBtnL = decodedButtons1[0];
+  joyBtnR = decodedButtons1[1];
+  userBtn1 = decodedButtons1[2];
+  userBtn2 = decodedButtons1[3];
+  userBtn3 = decodedButtons2[0];
+  userBtn4 = decodedButtons2[1];
+  userBtn5 = decodedButtons2[2];
+  userBtn6 = decodedButtons2[3];
+  poti1 = IBus.readChannel(9);  // maxSpeed = map(IBus.readChannel(9), 1000,2000, 20,100);
+  
+  Serial.print(joyBtnL);
+  Serial.print(", joyBtnR: ");
+  Serial.print(joyBtnR);
+  Serial.print(", enableDrive: ");
+  Serial.print(enableDrive);
+  Serial.print(", enableHeadMovements: ");
+  Serial.print(enableHeadMovements);
+  Serial.print(", toggleSwitch3: ");
+  Serial.print(toggleSwitch3);
+  Serial.print(", toggleSwitch4: ");
+  Serial.print(toggleSwitch4);
+  */
+
+  joyBtnL = IBus.readChannel(6) > 1750;     // get latest value for servo channel 7
+  joyBtnR = IBus.readChannel(7) > 1750;     // get latest value for servo channel 8
+  enableDrive = IBus.readChannel(8) > 1750;         // get latest value for servo channel 9  - 1750 becauwse failsafe is 1500
+  enableHeadMovements = IBus.readChannel(9) > 1750; // get latest value for servo channel 10 - 1750 becauwse failsafe is 1500
+  
+  // encodedSwitches, encodedButtons1, encodedButtons2, poti1};
+  
+}
 
 void debugPrints() {
   Serial.print("\tjoystickLX: ");
