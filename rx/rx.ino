@@ -352,8 +352,12 @@ void drive(int X, int Y, int Z) {
     // motorL = abs(motorR) > maxSpeed ? maxSpeed : abs(motorR);
 
     // Power to the motors
-    analogWrite(pwmPinA, abs(motorL));  // abs makes out of -50 +50
-    analogWrite(pwmPinB, abs(motorL));  // abs makes out of -50 +50
+    if(!forceDisableMotors) {
+      analogWrite(pwmPinA, motorL);  // abs makes out of -50 +50
+      ////analogWrite(pwmPinA, 100);  // test
+      analogWrite(pwmPinB, motorR);  // abs makes out of -50 +50
+      ////analogWrite(pwmPinB, 33);  // test
+    }
   }
 }
 
