@@ -74,37 +74,37 @@ int systemLEDbPin = 5;  // PWM
 
 
 // INITIAL VALUES
-int toggleSwitch1 = 0;
-int toggleSwitch2 = 0;
-int toggleSwitch3 = 0;
-int toggleSwitch4 = 0;
-int toggleSwitch5 = 0;
-int toggleSwitch6 = 0;
-int userBtn1 = 0;
-int userBtn2 = 0;
-int userBtn3 = 0;
-int userBtn4 = 0;
-int userBtn5 = 0;
-int userBtn6 = 0;
-int userBtn7 = 0;
-int userBtn8 = 0;
-int userBtn9 = 0;
-int userBtn10 = 0;
-int userBtn11 = 0;
-int userBtn12 = 0;
-int userBtn13 = 0;
-int userBtn14 = 0;
-int userBtn15 = 0;
-int userBtn18 = 0;
-int userBtn19 = 0;
+bool toggleSwitch1 = false;
+bool toggleSwitch2 = false;
+bool toggleSwitch3 = false;
+bool toggleSwitch4 = false;
+bool toggleSwitch5 = false;
+bool toggleSwitch6 = false;
+bool userBtn1 = false;
+bool userBtn2 = false;
+bool userBtn3 = false;
+bool userBtn4 = false;
+bool userBtn5 = false;
+bool userBtn6 = false;
+bool userBtn7 = false;
+bool userBtn8 = false;
+bool userBtn9 = false;
+bool userBtn10 = false;
+bool userBtn11 = false;
+bool userBtn12 = false;
+bool userBtn13 = false;
+bool userBtn14 = false;
+bool userBtn15 = false;
+bool userBtn18 = false;
+bool userBtn19 = false;
 int joystickLX = 0;
 int joystickLY = 0;
 int joystickLZ = 0;
-int joyBtnL = 0;
+bool joyBtnL = false;
 int joystickRX = 0;
 int joystickRY = 0;
 int joystickRZ = 0;
-int joyBtnR = 0;
+bool joyBtnR = false;
 int poti1 = 0;
 int poti2 = 0;
 int poti3 = 0;
@@ -115,9 +115,9 @@ int poti7 = 0;
 int poti8 = 0;
 int poti9 = 0;
 int poti10 = 0;
-int sysBtn1 = 0;
-int sysBtn2 = 0;
-int sysBtn3 = 0;
+bool sysBtn1 = false;
+bool sysBtn2 = false;
+bool sysBtn3 = false;
 
 // VAR VARS
 bool DEBUG = true;  // Prints to console, makes stuff slow, kinda
@@ -239,8 +239,25 @@ void loop() {
     printSignals();
   }
 
+  int encodedSwitches = encodeButtons(toggleSwitch1,toggleSwitch2,toggleSwitch3,toggleSwitch4);
+  int encodedButtons1 = encodeButtons(joyBtnL,joyBtnR,userBtn1,userBtn2);
+  int encodedButtons2 = encodeButtons(userBtn3,userBtn4,userBtn5,userBtn6);  // Not used
+
   // Values for first transmitter box
-  int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, joyBtnL, joyBtnR, toggleSwitch1, toggleSwitch2};
+  int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, encodedSwitches, encodedButtons1, poti1, poti2};
+  // int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, joyBtnL, joyBtnR, toggleSwitch1, toggleSwitch2};
+  // data test sent vs. received:
+  // longGap = 1000:
+  //   1000 => 1019 stable DIFF:19
+  //   1250 => 1269, 1275 unstable DIFF:19-25
+  //   1333 => 1352 or 1358 bistable DIFF:19-23
+  //   1500 => 1519 or 1525 bistable DIFF:19-25
+  //   1750 => 1769, 1775, 1776 unstable DIFF:19-26
+  //   1900 => 1925, 1926 DIFF:25-26
+  //   1950 => 1975, 1976 DIFF:25-26
+  //   1990 => 2011 ??? DIFF:11
+  //   2000 => 2011 stable DIFF:11
+
   sendSignal(transmitter1PpmPin, octave1, 10);
 
   // Transmitter & receiver should work with 12 channels but cannot get it to transmit (or receive?) properly
@@ -253,32 +270,38 @@ void loop() {
 
   catchSystemButtons();
 }
-         
+
+int encodeButtons(bool state1, bool state2, bool state3, bool state4) {
+  // Create a binary number from the button states
+  int encodedValue = (state1 << 0) | (state2 << 1) | (state3 << 2) | (state4 << 3);
+  // Scale the binary value from 0-15 to 1000-2000
+  return map(encodedValue, 0, 15, 1000, 2000);
+}
 
 void readInputs() {
-  toggleSwitch1 = 1000 + !digitalRead(toggleSwitch1Pin)*1000; // Get 1000 for false, 2000 for true;
-  toggleSwitch2 = 1000 + !digitalRead(toggleSwitch2Pin)*1000; // Get 1000 for false, 2000 for true;
-  toggleSwitch3 = 1000 + !digitalRead(toggleSwitch3Pin)*1000; // Get 1000 for false, 2000 for true;
-  toggleSwitch4 = 1000 + !digitalRead(toggleSwitch4Pin)*1000; // Get 1000 for false, 2000 for true;
-  toggleSwitch5 = 1000 + !digitalRead(toggleSwitch5Pin)*1000; // Get 1000 for false, 2000 for true;
-  toggleSwitch6 = 1000 + !digitalRead(toggleSwitch6Pin)*1000; // Get 1000 for false, 2000 for true;
-  userBtn1 = 1000 + !digitalRead(userBtn1Pin)*1000;           // Get 1000 for false, 2000 for true;
-  userBtn2 = 1000 + !digitalRead(userBtn2Pin)*1000;           // Get 1000 for false, 2000 for true;
-  userBtn3 = 1000 + !digitalRead(userBtn3Pin)*1000;           // Get 1000 for false, 2000 for true;
-  userBtn4 = 1000 + !digitalRead(userBtn4Pin)*1000;           // Get 1000 for false, 2000 for true;
-  userBtn5 = 1000 + !digitalRead(userBtn5Pin)*1000;           // Get 1000 for false, 2000 for true;
-  userBtn6 = 1000 + !digitalRead(userBtn6Pin)*1000;           // Get 1000 for false, 2000 for true;
-  userBtn7 = 1000 + !digitalRead(userBtn7Pin)*1000;           // Get 1000 for false, 2000 for true;
-  userBtn8 = 1000 + !digitalRead(userBtn8Pin)*1000;           // Get 1000 for false, 2000 for true;
-  userBtn9 = 1000 + !digitalRead(userBtn9Pin)*1000;           // Get 1000 for false, 2000 for true;
-  userBtn10 = 1000 + !digitalRead(userBtn10Pin)*1000;         // Get 1000 for false, 2000 for true;
-  userBtn11 = 1000 + !digitalRead(userBtn11Pin)*1000;         // Get 1000 for false, 2000 for true;
-  userBtn12 = 1000 + !digitalRead(userBtn12Pin)*1000;         // Get 1000 for false, 2000 for true;
-  userBtn13 = 1000 + !digitalRead(userBtn13Pin)*1000;         // Get 1000 for false, 2000 for true;
-  userBtn14 = 1000 + !digitalRead(userBtn14Pin)*1000;         // Get 1000 for false, 2000 for true;
-  userBtn15 = 1000 + !digitalRead(userBtn15Pin)*1000;         // Get 1000 for false, 2000 for true;
-  userBtn18 = 1000 + !digitalRead(userBtn18Pin)*1000;         // Get 1000 for false, 2000 for true;
-  userBtn19 = 1000 + !digitalRead(userBtn19Pin)*1000;         // Get 1000 for false, 2000 for true;
+  toggleSwitch1 = !digitalRead(toggleSwitch1Pin);
+  toggleSwitch2 = !digitalRead(toggleSwitch2Pin);
+  toggleSwitch3 = !digitalRead(toggleSwitch3Pin);
+  toggleSwitch4 = !digitalRead(toggleSwitch4Pin);
+  toggleSwitch5 = !digitalRead(toggleSwitch5Pin);
+  toggleSwitch6 = !digitalRead(toggleSwitch6Pin);
+  userBtn1 = !digitalRead(userBtn1Pin);
+  userBtn2 = !digitalRead(userBtn2Pin);
+  userBtn3 = !digitalRead(userBtn3Pin);
+  userBtn4 = !digitalRead(userBtn4Pin);
+  userBtn5 = !digitalRead(userBtn5Pin);
+  userBtn6 = !digitalRead(userBtn6Pin);
+  userBtn7 = !digitalRead(userBtn7Pin);
+  userBtn8 = !digitalRead(userBtn8Pin);
+  userBtn9 = !digitalRead(userBtn9Pin);
+  userBtn10 = !digitalRead(userBtn10Pin);
+  userBtn11 = !digitalRead(userBtn11Pin);
+  userBtn12 = !digitalRead(userBtn12Pin);
+  userBtn13 = !digitalRead(userBtn13Pin);
+  userBtn14 = !digitalRead(userBtn14Pin);
+  userBtn15 = !digitalRead(userBtn15Pin);
+  userBtn18 = !digitalRead(userBtn18Pin);
+  userBtn19 = !digitalRead(userBtn19Pin);
 
   if(trim) {
     joystickLX =map(analogRead(joystickLXPin), 0,1023,1000,2000) + map(analogRead(poti7Pin), 0, 1024, -512, 512);
@@ -288,7 +311,7 @@ void readInputs() {
     joystickLY = map(analogRead(joystickLYPin), 0,1023,1000,2000);  
   }
   joystickLZ = map(analogRead(joystickLZPin), 0,1023,1000,2000);
-  joyBtnL = 1000 + !digitalRead(joyBtnLPin)*1000; // Get 1000 for false, 2000 for true
+  joyBtnL = !digitalRead(joyBtnLPin);
 
   if(trim) {
     joystickRX =map(analogRead(joystickRXPin), 0,1023,1000,2000) + map(analogRead(poti9Pin), 0, 1024, -512, 512);
@@ -298,7 +321,7 @@ void readInputs() {
     joystickRY = map(analogRead(joystickRYPin), 0,1023,1000,2000);  
   }
   joystickRZ = map(analogRead(joystickRZPin), 0,1023,1000,2000);
-  joyBtnR = 1000 + !digitalRead(joyBtnRPin)*1000; // Get 1000 for false, 2000 for true
+  joyBtnR = !digitalRead(joyBtnRPin);
 
   poti1 = map(analogRead(poti1Pin), 0,1023,2000,1000);
   poti2 = map(analogRead(poti2Pin), 0,1023,2000,1000);
@@ -324,33 +347,33 @@ void printSignals() {
   Serial.print(joystickRX); Serial.print("\t");
   Serial.print(joystickRY); Serial.print("\t");
   Serial.print(joystickRZ); Serial.print("\t");
-  Serial.print(joyBtnL > 1500 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(joyBtnL ? "🟢" : "⚫"); Serial.print("\t");
   // ^^ This is the last print that "Serial Plotter" can handle
 
-  Serial.print(joyBtnR > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(toggleSwitch1 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(toggleSwitch2 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(toggleSwitch3 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(toggleSwitch4 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(toggleSwitch5 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(toggleSwitch6 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn1 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn2 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn3 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn4 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn5 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn6 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn7 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn8 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn9 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn10 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn11 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn12 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn13 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn14 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn15 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn18 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
-  Serial.print(userBtn19 > 1500 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(joyBtnR ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(toggleSwitch1 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(toggleSwitch2 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(toggleSwitch3 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(toggleSwitch4 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(toggleSwitch5 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(toggleSwitch6 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn1 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn2 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn3 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn4 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn5 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn6 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn7 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn8 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn9 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn10 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn11 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn12 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn13 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn14 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn15 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn18 ? "🟢" : "⚫"); Serial.print("\t");
+  Serial.print(userBtn19 ? "🟢" : "⚫"); Serial.print("\t");
   Serial.print(poti1); Serial.print("\t");
   Serial.print(poti2); Serial.print("\t");
   Serial.print(poti3); Serial.print("\t");
@@ -371,7 +394,7 @@ void printSignals() {
 
 void sendSignal(int transmitterPin, int* data, int dataSize) {
   // *** MAGIC ***
-  // same function for both transmitters
+  // Same function for both transmitters
   int gap = 500;
   int longGap = 1000;  // 10'000 according to james bruton, but its very slow and 1000 works too?!
 
