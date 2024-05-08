@@ -13,17 +13,17 @@ bool fakeRemoteInputs = false;     // If you do not have a RX connected, try thi
 bool forceDisableMotors = false;    // Disable effective motor control, but keep calculations & serial prints
 
 // Servos
-int servoXPin = 5;
-int servoYPin = 6;
+int servoXPin = 2;  // 5
+int servoYPin = 10;  // 6
 
 // DC Motors
-int directionPinA = 13;  // 12   CHANGES DIRECTION WHEN UPLAODING because 13 = built in LED
-int pwmPinA = 11;  // 3
-int brakePinA =  8;  // 9
+int directionPinA = 13;  // CHANGES DIRECTION WHEN UPLAODING because 13 = built in LED
+int pwmPinA = 11;
+int brakePinA =  8;
 
-int directionPinB = 12;  // 13;
-int pwmPinB = 3;  // 11;
-int brakePinB =9;  //  8;
+int directionPinB = 12;
+int pwmPinB = 3;
+int brakePinB =9;
 
 // Remote channels
 int joystickLX = 1500;
