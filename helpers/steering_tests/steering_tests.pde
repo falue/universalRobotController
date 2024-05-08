@@ -161,6 +161,8 @@ void tracks(int motorL, int motorR) {
 void serialEvent(Serial myPort) {
   if(use_Serial) {
     val = myPort.readStringUntil('\n');
+
+    
     if (val != null) {
       val = trim(val);  // Trim whitespace
       // println(val);

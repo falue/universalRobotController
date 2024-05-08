@@ -173,7 +173,6 @@ void serialEvent(Serial myPort) {
         if (data.length == 15) { // Check if all elements are present
           // LX: 1500  LY: 1794  LZ: 1500  steering: ▲  motorL: 58  dir_motorL: ▲  motorR: 58  dir_motorR: ▲
           // motorL: 17  dir_motorL: forward  motorR: 17  dir_motorR: back  joystickLX: 1586  joystickLY: 1454  joystickLZ: 1692  jostickRX: 1485  jostickRY: 1509  jostickRZ: 1513  joyBtnL: 1019  joyBtnR: 1019  motorSwitch: 1  servoSwitch: 0
-
           LX = int(data[5].split("\t")[0]);
           LY = int(data[6].split("\t")[0]);
           LZ = int(data[7].split("\t")[0]);
