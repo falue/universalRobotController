@@ -13,11 +13,11 @@ bool fakeRemoteInputs = false;     // If you do not have a RX connected, try thi
 bool forceDisableMotors = false;    // Disable effective motor control, but keep calculations & serial prints
 
 // Servos
-int servoXPin = 2;  // 5
-int servoYPin = 10;  // 6
+int servoXPin = 2;
+int servoYPin = 10;
 
 // DC Motors
-int directionPinA = 13;  // CHANGES DIRECTION WHEN UPLAODING because 13 = built in LED
+int directionPinA = 13;
 int pwmPinA = 11;
 int brakePinA =  8;
 
@@ -58,7 +58,7 @@ float smoothedValueZ = float(jostickRZ);
 // Limit the max speed of the robot
 // 0-254 *or* 0-100. This is up for dabate. The latter is mentioned in the docs of the
 // motor shield r3 but a weird thing, usually things like that are 0-254.
-int maxSpeed = 100;  // Set by poti1
+int maxSpeed = 100;  // Changed by poti1
 int minSpeed = 33;   // Below this, the motors do not turn bc. of friction and not being spherical cows in space
 
 /// float smoothHeadMovement = 0.001 or so;  // Set by poti2
@@ -73,9 +73,13 @@ const int endValue = 2000;
 void setup() {
   delay(1666);
 
-  Serial.begin(115200);   // remove comment from this line if you change the Serial port in the next line
-  // next line somehow makes servo twitch
-  IBus.begin(Serial1, IBUSBM_NOTIMER);    // change to Serial1 = D0 (or Serial2 or 3 for on ard mega or so) port when required
+  Serial.begin(115200);
+  
+  // Establish IBus connection to receiver
+  //   Change to Serial1 = D0 (or Serial2 or 3 for on ard mega or so) port when required
+  //   The servo library conflicts with the interrupts used by the IBus library -
+  //   Therefore, use second argument "IBUSBM_NOTIMER" to call the IBus.loop() function manually in the main loop
+  IBus.begin(Serial1, IBUSBM_NOTIMER);
 
   // Attach head servos
   servoX.attach(servoXPin);
@@ -405,25 +409,25 @@ void drive(int X, int Y, int Z) {
   Serial.print(idle ? "IDLE: 🔴" : "RUN:  🟢");*/
 
   // Values between 1000 and 2000
-  X = clampMap(X, 1000,2000, -maxSpeed,maxSpeed);  // was -maxSpeed,maxSpeed
-  Y = clampMap(Y, 1000,2000, -maxSpeed,maxSpeed);  // was -maxSpeed,maxSpeed
-  Z = clampMap(Z, 1000,2000, maxSpeed,-maxSpeed);  // was maxSpeed,-maxSpeed  // invert Z axis for some reason
+  X = clampMap(X, 1000,2000, -maxSpeed,maxSpeed);
+  Y = clampMap(Y, 1000,2000, -maxSpeed,maxSpeed);
+  Z = clampMap(Z, 1000,2000, maxSpeed,-maxSpeed);  // invert Z axis for some reason
 
   if(idle || !enableDrive) {
-    // Engange breaks
+    // Remote is not touched - engange breaks and do nothing
     digitalWrite(brakePinA, HIGH);
     digitalWrite(brakePinB, HIGH);
-    analogWrite(pwmPinA, 0);  // 0-100%
-    analogWrite(pwmPinB, 0);  // 0-100%
+    analogWrite(pwmPinA, 0);
+    analogWrite(pwmPinB, 0);
   } else {
     // Release breaks
     digitalWrite(brakePinA, LOW);
     digitalWrite(brakePinB, LOW);
 
     // Mix X Y Z together
+    // Get values between -maxSpeed and maxSpeed
     int motorL = calculateMotorSpeed(Y, X, Z, 'L');
     int motorR = calculateMotorSpeed(Y, X, Z, 'R');
-    // Get values between -maxSpeed and maxSpeed
 
     // Set direction
     digitalWrite(directionPinA, motorL < 0);  // LOW to reverse
@@ -431,15 +435,15 @@ void drive(int X, int Y, int Z) {
 
 
     Serial.print("\tmotorL: ");
-    Serial.print(motorL);  // Make negative numbers positive because direction is set with directionPinA
+    Serial.print(motorL);
     Serial.print("\tdir_motorL: ");
     Serial.print(motorL < 0 ? "back" : "forward");
     Serial.print("\tmotorR: ");
-    Serial.print(motorR);  // Make negative numbers positive because direction is set with directionPinB
+    Serial.print(motorR);
     Serial.print("\tdir_motorR: ");
     Serial.print(motorR < 0 ? "back" : "forward");
 
-    // Below minSpeed, nothing turns
+    // TODO: Below minSpeed, nothing turns
     // motorL = abs(motorL) < minSpeed ? minSpeed : abs(motorL);
     // motorR = abs(motorR) < minSpeed ? minSpeed : abs(motorR);
 
@@ -503,7 +507,6 @@ void headMovement(int X, int Y, int Z) {
   servoX.writeMicroseconds(servoValueX);
   int servoValueY = map(currentSmoothedY, 1000, 2000, 2300, 1950);  // up, down
   servoY.writeMicroseconds(servoValueY);
-  
 
   Serial.print("\tservoValueX: ");
   Serial.print(servoValueX);
