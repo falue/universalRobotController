@@ -21,11 +21,13 @@ int circleY = heightWindow - radius - 20;
 void setup() {
   size(1000, 666); // Set the window size to 1000x666 pixels
   smooth(); // Smooths out the drawing
+  println("Connect RX (Receiver / Robot) to USB and change index in code (line 30)");
+  println("");
   println("Available serial ports:");
   // Print all the available serial ports
   printArray(Serial.list());
   
-  String portName = Serial.list()[3]; // Change this to your Arduino port
+  String portName = Serial.list()[9]; // Change this to your Arduino port
   myPort = new Serial(this, portName, 115200);
   myPort.bufferUntil('\n');          // Buffer until a newline character
   
@@ -165,28 +167,41 @@ void serialEvent(Serial myPort) {
     
     if (val != null) {
       val = trim(val);  // Trim whitespace
-      // println(val);
+      // println(val);  // Serial output of RX
       
       // Parse the incoming data
       String[] data = splitTokens(val, ": "); // Split the data by tabs and colons
       if(data != null) {
-        if (data.length == 9) { // Check if all elements are present
+        // print(data.length);
+        
+        if (data.length >= 9) { // Check if all elements are present
           // LX: 1500  LY: 1794  LZ: 1500  steering: ▲  motorL: 58  dir_motorL: ▲  motorR: 58  dir_motorR: ▲
           // LX: *0* LY: *1820* LZ: *1818* Motor L: *0*  dir_motorL *64* Motor R: *0*  dir_motorR *32
           LX = int(data[1].split("\t")[0]);
           LY = int(data[2].split("\t")[0]);
           LZ = int(data[3].split("\t")[0]);
-          // String steering = data[7]; // Steering direction
-          motorL = int(data[5].split("\t")[0]);
-          dir_motorL = data[6].split("\t")[0]; // Direction for motorL
-          motorR = int(data[7].split("\t")[0]);
-          dir_motorR = data[8].split("\t")[0]; // Direction for motorR
+          
+          // NOT USED
+          /*RX = int(data[4].split("\t")[0]);
+          RY = int(data[5].split("\t")[0]);
+          RZ = int(data[6].split("\t")[0]);
+          joyBtnL = int(data[7].split("\t")[0]);
+          joyBtnR = int(data[8].split("\t")[0]);
+          enableDrive = int(data[9].split("\t")[0]) == 1;
+          enableHeadMovements = int(data[10].split("\t")[0]) == 1;*/
+          
+          if (data.length >= 15) {
+            motorL = int(data[11].split("\t")[0]);
+            dir_motorL = data[12].split("\t")[0]; // Direction for motorL
+            motorR = int(data[13].split("\t")[0]);
+            dir_motorR = data[14].split("\t")[0]; // Direction for motorR
+          }
     
           // Display the collected data
-          print("LX: *" + LX + "* LY: *" + LY + "* LZ: *" + LZ);
+          print("LX: " + LX + ", LY: " + LY + ", LZ: " + LZ);
           // print(", Steering: " + steering);
-          print("* Motor L: *" + motorL + "*  dir_motorL *" + dir_motorL);
-          println("* Motor R: *" + motorR + "*  dir_motorR *" + dir_motorR);
+          print(", Motor L: " + motorL + ", dir_motorL: " + dir_motorL);
+          println(", Motor R: " + motorR + ",  dir_motorR: " + dir_motorR + "");
         }
       }
     }
