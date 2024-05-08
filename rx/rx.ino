@@ -7,9 +7,10 @@ Servo servoX;
 Servo servoY;
 
 // Options
-bool enableHeadMovements = false;
-bool enableDrive = false;
-bool fakeRemoteInputs = false;
+bool enableDrive = false;          // Set by switch 2
+bool enableHeadMovements = false;  // Set by switch 1
+bool fakeRemoteInputs = false;     // If you do not have a RX connected, try this. Generates ramp-ups and -downs of joystiuck movement.
+bool forceDisableMotors = false;    // Disable effective motor control, but keep calculations & serial prints
 
 // Servos
 int servoXPin = 5;
@@ -31,10 +32,23 @@ int joystickLZ = 1500;
 int jostickRX = 1500;
 int jostickRY = 1500;
 int jostickRZ = 1500;
-int joyBtnL = 1500;
-int joyBtnR = 1500;
-int toggleSwitch1 = 1500;
-int toggleSwitch2 = 1500;
+bool joyBtnL = false;
+bool joyBtnR = false;
+
+// Unused btns
+bool toggleSwitch3 = false;
+bool toggleSwitch4 = false;
+bool userBtn1 = false;
+bool userBtn2 = false;
+// bool userBtn3 = false;  // not used
+// bool userBtn4 = false;  // not used
+// bool userBtn5 = false;  // not used
+// bool userBtn6 = false;  // not used
+int poti1 = 1500;
+int poti2 = 1500;
+
+bool decodedSwitches[4];
+bool decodedButtons[4];
 
 // Smoothing servos
 float smoothedValueX = float(jostickRX);
@@ -44,10 +58,14 @@ float smoothedValueZ = float(jostickRZ);
 // Limit the max speed of the robot
 // 0-254 *or* 0-100. This is up for dabate. The latter is mentioned in the docs of the
 // motor shield r3 but a weird thing, usually things like that are 0-254.
-int maxSpeed = 100;
+int maxSpeed = 100;  // Set by poti1
+int minSpeed = 33;   // Below this, the motors do not turn bc. of friction and not being spherical cows in space
+
+/// float smoothHeadMovement = 0.001 or so;  // Set by poti2
 
 // fakeRemoteInputs
 int directionX = 1, directionY = 1, directionZ = 1;
+int phase = 0;
 int step = 2;
 const int startValue = 1000;
 const int endValue = 2000;
@@ -80,25 +98,27 @@ void loop() {
     fakeJoystickValues();
   }
 
-  if(enableDrive) {
-    drive(joystickLX, joystickLY, joystickLZ);
-  }
+  detectLossOfSignal();
+
+  debugPrints();
+
+  drive(joystickLX, joystickLY, joystickLZ);
 
   if(enableHeadMovements) {
-    servoX.attach(servoXPin);
-    servoY.attach(servoYPin);
+    if(!servoX.attached()) {
+      servoX.attach(servoXPin);
+      servoY.attach(servoYPin);
+    }
     headMovement(jostickRX, jostickRY, jostickRZ);
-  } else {
+  } else if(servoX.attached()) {
     servoX.detach();
     servoY.detach();
   }
 
-  debugPrints();
-
-  // delay(5);  do not delay because IBus.loop() must be called as fast as possible
+  Serial.println("");
+  // delay(5);  // Do not delay because IBus.loop() must be called as fast as possible
 }
 
-int phase = 0;
 
 void fakeJoystickValues() {
     if(phase == 0 || phase == 3 || phase >= 4) {
@@ -163,163 +183,238 @@ void fakeJoystickValues() {
     Serial.print("\tLZ: "); Serial.print(joystickLZ);
     Serial.print("\tsteering: ");
     Serial.print(dirArrow);
-    Serial.println("");
 }
 
 void readChannels() {
+  int correction = -19;  // -19;  // Somehow all the values are shifted 11-26 points (weighted median 19)
+
   // Call internal loop function to update the communication to the receiver.
   //   Needed if IBus.begin(); is called with second parameter "IBUSBM_NOTIMER"
   IBus.loop();
 
-  // Get the latest IBus data from cached data
-  joystickLX = IBus.readChannel(2);  // get latest value for servo channel 2  // Somehow, these three channels are reordered by the TX or (!) RX
-  joystickLY = IBus.readChannel(0);  // get latest value for servo channel 0  // Somehow, these three channels are reordered by the TX or (!) RX
-  joystickLZ = IBus.readChannel(1);  // get latest value for servo channel 1  // Somehow, these three channels are reordered by the TX or (!) RX
-  jostickRX = IBus.readChannel(3);   // get latest value for servo channel 4
-  jostickRY = IBus.readChannel(4);   // get latest value for servo channel 5
-  jostickRZ = IBus.readChannel(5);   // get latest value for servo channel 6
-
-  /// WIP
-  /// MAYBE GO BACK TO LAST COMMIT because fuck it
   /*
-  bool* decodedSwitches = decodeButtons(IBus.readChannel(6));  // toggleSwitch1,toggleSwitch2,toggleSwitch3,toggleSwitch4
-  bool* decodedButtons1 = decodeButtons(IBus.readChannel(7));  // joyBtnL,joyBtnR,userBtn1,userBtn2
-  bool* decodedButtons2 = decodeButtons(IBus.readChannel(8));  // userBtn3,userBtn4,userBtn5,userBtn6
-  Serial.print(IBus.readChannel(6));
-  Serial.print(", ");
-  Serial.print(IBus.readChannel(7));
-  Serial.print(", ");
-  Serial.print(IBus.readChannel(8));
-  Serial.print(", joyBtnL: ");
+  Sent by TX:
+    ch0: joystickLX
+    ch1: joystickLY
+    ch2: joystickLZ
+    ch3: joystickRX
+    ch4: joystickRY
+    ch5: joystickRZ
+    ch6: encodedSwitches: 0: toggleSwitch1, 1: toggleSwitch2, 2: toggleSwitch3, 3: toggleSwitch4
+    ch7: encodedButtons1: 0: joyBtnL,       1: joyBtnR,       2: userBtn1,      3: userBtn2
+    ch8: poti1
+    ch9: poti2
+  */
+
+  // Get the latest IBus data from cached data
+  //   IMPORTANT: Somehow, some (?) channels are reordered by the TX or (!) RX
+  joystickLY = IBus.readChannel(0) + correction;
+  joystickLZ = IBus.readChannel(1) + correction;
+  joystickLX = IBus.readChannel(2) + correction;
+  jostickRX = IBus.readChannel(3) + correction;
+  jostickRY = IBus.readChannel(4) + correction;
+  jostickRZ = IBus.readChannel(5) + correction;
+  
+  // Add bool array to function because memory leaks
+  decodeButtons(IBus.readChannel(6) + correction, decodedSwitches);
+  decodeButtons(IBus.readChannel(7) + correction, decodedButtons);
+  // bool* decodedButtons2 = decodeButtons(IBus.readChannel(8) + correction);  // Not used
 
   enableDrive = decodedSwitches[0];
   enableHeadMovements = decodedSwitches[1];
   toggleSwitch3 = decodedSwitches[2];
   toggleSwitch4 = decodedSwitches[3];
-  joyBtnL = decodedButtons1[0];
-  joyBtnR = decodedButtons1[1];
-  userBtn1 = decodedButtons1[2];
-  userBtn2 = decodedButtons1[3];
-  userBtn3 = decodedButtons2[0];
+
+  joyBtnL = decodedButtons[0];
+  joyBtnR = decodedButtons[1];
+  userBtn1 = decodedButtons[2];
+  userBtn2 = decodedButtons[3];
+  /* userBtn3 = decodedButtons2[0];
   userBtn4 = decodedButtons2[1];
   userBtn5 = decodedButtons2[2];
-  userBtn6 = decodedButtons2[3];
-  poti1 = IBus.readChannel(9);  // maxSpeed = map(IBus.readChannel(9), 1000,2000, 20,100);
-  
-  Serial.print(joyBtnL);
-  Serial.print(", joyBtnR: ");
-  Serial.print(joyBtnR);
-  Serial.print(", enableDrive: ");
-  Serial.print(enableDrive);
-  Serial.print(", enableHeadMovements: ");
-  Serial.print(enableHeadMovements);
-  Serial.print(", toggleSwitch3: ");
-  Serial.print(toggleSwitch3);
-  Serial.print(", toggleSwitch4: ");
-  Serial.print(toggleSwitch4);
-  */
+  userBtn6 = decodedButtons2[3]; */
 
-  joyBtnL = IBus.readChannel(6) > 1750;     // get latest value for servo channel 7
-  joyBtnR = IBus.readChannel(7) > 1750;     // get latest value for servo channel 8
-  enableDrive = IBus.readChannel(8) > 1750;         // get latest value for servo channel 9  - 1750 becauwse failsafe is 1500
-  enableHeadMovements = IBus.readChannel(9) > 1750; // get latest value for servo channel 10 - 1750 becauwse failsafe is 1500
-  
-  // encodedSwitches, encodedButtons1, encodedButtons2, poti1};
-  
+  poti1 = IBus.readChannel(8) + correction;
+  poti2 = IBus.readChannel(9) + correction;
+  ////// TODO: maxSpeed = map(poti1, 1000,2000, 10,255);
+  ////// TODO: headMovementSmoothing = map(poti2, 1000,2000, 0.0005,0.75);
 }
 
 void debugPrints() {
-  Serial.print("\tjoystickLX: ");
+  Serial.print("\tLX: ");
   Serial.print(joystickLX);
-  Serial.print("\tjoystickLY: ");
+  Serial.print("\tLY: ");
   Serial.print(joystickLY);
-  Serial.print("\tjoystickLZ: ");
+  Serial.print("\tLZ: ");
   Serial.print(joystickLZ);
-  Serial.print("\tjostickRX: ");
+  Serial.print("\tRX: ");
   Serial.print(jostickRX);
-  Serial.print("\tjostickRY: ");
+  Serial.print("\tRY: ");
   Serial.print(jostickRY);
-  Serial.print("\tjostickRZ: ");
+  Serial.print("\tRZ: ");
   Serial.print(jostickRZ);
-  Serial.print("\tjoyBtnL: ");
+  Serial.print("\tJBtnL: ");
   Serial.print(joyBtnL);
-  Serial.print("\tjoyBtnR: ");
+  Serial.print("\tJBtnR: ");
   Serial.print(joyBtnR);
-  Serial.print("\ttoggleSwitch1: ");
-  Serial.print(toggleSwitch1);
-  Serial.print("\ttoggleSwitch2: ");
-  Serial.print(toggleSwitch2);
-  Serial.println();
+  Serial.print("\tenDrive: ");
+  Serial.print(enableDrive);
+  Serial.print("\tenHead: ");
+  Serial.print(enableHeadMovements);
+  Serial.print("\tswitch3: ");
+  Serial.print(toggleSwitch3);
+  Serial.print("\tswitch4: ");
+  Serial.print(toggleSwitch4);
+  Serial.print("\tBtn1: ");
+  Serial.print(userBtn1);
+  Serial.print("\tBtn2: ");
+  Serial.print(userBtn2);
+  Serial.print("\tpot1: ");
+  Serial.print(poti1);
+  Serial.print("\tpot2: ");
+  Serial.print(poti2);
 }
 
-// can you change this function so that the values are real "mixed together" - 
-/* int calculateMotorSpeed(int Y, int X, int Z, char motorSide) {
-    int mixer = 0;
-    if (motorSide == 'L') {
-        mixer = Y - (Z + X) / 2;  // Baseversion: Y - Z + X
-    } else if (motorSide == 'R') {
-        mixer = Y + (Z - X) / 2;  // Baseversion: Y + Z - X
-    }
-    return mixer;
-}
-
-int calculateMotorSpeed_OLD(int Y, int X, int Z, char motorSide) {
-    int val;
-    if (motorSide == 'L') {
-        val = Y - abs(X)/2 - abs(Z)/2;  // Reduce left motor speed when turning right
-    } else {
-        val = Y + abs(X)/2 + abs(Z)/2;  // Reduce right motor speed when turning left
-    }
-    return val > 100 ? 100 : val;
-} */
-
-// Y stick does nothing for half the way
+// https://github.com/edumardo/DifferentialSteering/
 int calculateMotorSpeed(int Y, int X, int Z, char motorSide) {
-  // Scaling factor for the turn influence
-  // 1=ignore Y when steering
-  // 0=ignore X when driving
-  // 0.5=add half X to Y
-  float turnScaleFactor = 0.5;  // COULD BE A POTI FROM THE REMOTE FROM 0.2-0.8 OR SO
-  // Compute the preliminary motor speeds for differential steering
-  int motorSpeedLeft = Y + X * turnScaleFactor;
-  int motorSpeedRight = Y - X * turnScaleFactor;
+  /*
+    Ev.:
+      Werte in mL und mR separieren, erst dann kombinieren?
+      dann mappen, constrainen?
+      mL = Y <= 0 ? abs(Y) : Y;
+      mL = X <= 0 ? abs(X) : X;
 
-  // somehow map the values - scale the smaller one if the bigger one is > maxSpeed
+    alternativ:
+      mL = Y + X/2;
+      mR = Y - X/2;
+      dann dreisatz machen, nicht map, falls wert über 100 ist
+      also sowas:
 
-  // Return the appropriate motor speed based on the side
-  if(motorSpeedLeft < 0 && motorSpeedRight < 0) {
-    if (motorSide == 'R') {  // invert if backwards
-      return constrain(motorSpeedLeft, -maxSpeed, maxSpeed);
-    } else {
-      return constrain(motorSpeedRight, -maxSpeed, maxSpeed);
-    }
+      if mL > 100 {
+      mL = dreisatz(mL, 100, mR)
+  */
 
-  } else {
-    if (motorSide == 'L') {
-      return constrain(motorSpeedLeft, -maxSpeed, maxSpeed);
-    } else {
-      return constrain(motorSpeedRight, -maxSpeed, maxSpeed);
-    }
+  // TODO: maybe only use mixer if something something?
+  float mixer = 0.825;  // 0.1 to 1.0
+  int leftMotor = Y + X*mixer;
+  int rightMotor = Y - X*mixer;
+
+  if(leftMotor > maxSpeed) {
+    // leftMotor = ruleOfThree(leftMotor, maxSpeed, rightMotor);
+    //
+     // lefMotor     | maxSpeed (100) |
+    //   rightMotor  |       n        |
+    //  Solve n
+    //
+    Serial.print("L>max");
+    // rightMotor = ruleOfThree(leftMotor, maxSpeed, rightMotor);
+    leftMotor = maxSpeed;
+  } else if(leftMotor < -maxSpeed) {
+    Serial.print("L<min");
+    // // leftMotor = ruleOfThree(leftMotor, maxSpeed, rightMotor);
+    // rightMotor = ruleOfThree(leftMotor, -maxSpeed, rightMotor);
+    leftMotor = -maxSpeed;
   }
+  // else if(rightMotor > maxSpeed) {
+  // //  leftMotor = ruleOfThree(rightMotor, maxSpeed, leftMotor);
+    // // rightMotor = ruleOfThree(leftMotor, maxSpeed, rightMotor);
+  //  rightMotor = maxSpeed;
+  //}//
+  if(rightMotor > maxSpeed) {
+    Serial.print("R>max");
+    // //leftMotor = ruleOfThree(rightMotor, maxSpeed, leftMotor);
+    // rightMotor = ruleOfThree(rightMotor, maxSpeed, leftMotor);
+    rightMotor = maxSpeed;
+  } else if(rightMotor < -maxSpeed) {
+    Serial.print("R<min");
+    // //leftMotor = ruleOfThree(rightMotor, maxSpeed, leftMotor);
+    // rightMotor = ruleOfThree(rightMotor, -maxSpeed, leftMotor);
+    rightMotor = -maxSpeed;
+  }
+
+  /*
+    float   nMotPremixL = 0;    // Motor (left)  premixed output        (-127..+127)
+    float   nMotPremixR = 0;    // Motor (right) premixed output        (-127..+127)
+    int     nPivSpeed = 0;      // Pivot Speed                          (-127..+127)
+    float   fPivScale = 0;      // Balance scale b/w drive and pivot    (   0..1   )
+    int     computeRange = 127; // 127 (orig), maybe 255 or maxSpeed?
+    int     m_fPivYLimit = 4;  // 32, what ever this is - kinda deathZone?
+
+    // Calculate Drive Turn output due to Joystick X input
+    if (Y >= 0) {
+        // Forward
+        nMotPremixL = (X >= 0) ? computeRange : (computeRange + X);
+        nMotPremixR = (X >= 0) ? (computeRange - X) : computeRange;
+    } else {
+        // Reverse
+        nMotPremixL = (X >= 0) ? (computeRange - X) : computeRange;
+        nMotPremixR = (X >= 0) ? computeRange : (computeRange + X);
+    }
+
+    // Scale Drive output due to Joystick Y input (throttle)
+    nMotPremixL = nMotPremixL * Y / computeRange;
+    nMotPremixR = nMotPremixR * Y / computeRange;
+
+    // Now calculate pivot amount
+    //   Strength of pivot (nPivSpeed) based on Joystick X input
+    //   Blending of pivot vs drive (fPivScale) based on Joystick Y input
+    nPivSpeed = X;
+    fPivScale = (abs(Y) > m_fPivYLimit) ? 0.0 : (1.0 - abs(Y) / m_fPivYLimit);
+
+    // Calculate final mix of Drive and Pivot
+    int leftMotor  = (1.0 - fPivScale) * nMotPremixL + fPivScale * ( nPivSpeed);
+    int rightMotor = (1.0 - fPivScale) * nMotPremixR + fPivScale * (-nPivSpeed);
+    */
+
+    if (motorSide == 'L') {
+      return leftMotor;
+    } else {
+      return rightMotor;
+    }
+    return 0; // Default return in case of an unexpected motorSide input
+}
+
+int ruleOfThree(int a, int b, int c) {
+  //
+  if (b == 0) { // Check for division by zero
+      Serial.println("Error: Division by zero.");
+      return 0; // Return zero or an appropriate error value
+  }
+  int d = (c * b) / a;
+  return d;
 }
 
 void drive(int X, int Y, int Z) {
   /* Terack movement */
+  int deathZone = 25;  // 35, 50 works too
+  // If walues chang only very little, nothing is being controlled, i.e. robot should be idling
+  bool idle = isInDeathZone(X, 1500, deathZone) && isInDeathZone(Y, 1500, deathZone) && isInDeathZone(Z-165, 1500, deathZone);  // Z-165 because cheap joystick & cannot be trimmed
+  /*Serial.print("X: ");
+  Serial.print(X);
+  Serial.print(" - ");
+  Serial.print(isInDeathZone(X, 1500, deathZone) ? "🔴" : "🟢");
+  Serial.print(" Y: ");
+  Serial.print(Y);
+  Serial.print("  - ");
+  Serial.print(isInDeathZone(Y, 1500, deathZone) ? "🔴" : "🟢");
+  Serial.print(" Z: ");
+  Serial.print(Z);
+  Serial.print("  - ");
+  Serial.print(isInDeathZone(Z-165, 1500, deathZone) ? "🔴" : "🟢");
+  Serial.print(" \t\t");
+  Serial.print(idle ? "IDLE: 🔴" : "RUN:  🟢");*/
+
   // Values between 1000 and 2000
-  X = clampMap(X, 1000,2000, -maxSpeed,maxSpeed);
-  Y = clampMap(Y, 1000,2000, -maxSpeed,maxSpeed);
-  Z = clampMap(Z, 1000,2000, maxSpeed,-maxSpeed);  // invert Z axis for some reason
+  X = clampMap(X, 1000,2000, -maxSpeed,maxSpeed);  // was -maxSpeed,maxSpeed
+  Y = clampMap(Y, 1000,2000, -maxSpeed,maxSpeed);  // was -maxSpeed,maxSpeed
+  Z = clampMap(Z, 1000,2000, maxSpeed,-maxSpeed);  // was maxSpeed,-maxSpeed  // invert Z axis for some reason
 
-  // static: XYZ == 500
-  bool idle = isInDeadZone(X, 0, 1) && isInDeadZone(Y, 0, 1) && isInDeadZone(Z, 0, 1);
-  // if not static, release clamps
-
-  if(idle) {
+  if(idle || !enableDrive) {
     // Engange breaks
     digitalWrite(brakePinA, HIGH);
     digitalWrite(brakePinB, HIGH);
-    analogWrite(pwmPinA, 0);  // 0-100%, not sure if necessary?
-    analogWrite(pwmPinB, 0);  // 0-100%, not sure if necessary?
+    analogWrite(pwmPinA, 0);  // 0-100%
+    analogWrite(pwmPinB, 0);  // 0-100%
   } else {
     // Release breaks
     digitalWrite(brakePinA, LOW);
@@ -328,42 +423,37 @@ void drive(int X, int Y, int Z) {
     // Mix X Y Z together
     int motorL = calculateMotorSpeed(Y, X, Z, 'L');
     int motorR = calculateMotorSpeed(Y, X, Z, 'R');
-    // Got values between -maxSpeed and maxSpeed (254)
+    // Get values between -maxSpeed and maxSpeed
 
     // Set direction
     digitalWrite(directionPinA, motorL < 0);  // LOW to reverse
     digitalWrite(directionPinB, motorR < 0);  // LOW to reverse
 
+
     Serial.print("\tmotorL: ");
-    Serial.print(abs(motorL));
+    Serial.print(motorL);  // Make negative numbers positive because direction is set with directionPinA
     Serial.print("\tdir_motorL: ");
     Serial.print(motorL < 0 ? "back" : "forward");
     Serial.print("\tmotorR: ");
-    Serial.print(abs(motorR));
+    Serial.print(motorR);  // Make negative numbers positive because direction is set with directionPinB
     Serial.print("\tdir_motorR: ");
     Serial.print(motorR < 0 ? "back" : "forward");
-    Serial.println();
 
-    // Z is inverted
-    // values are over 100 when mixed together
-
-    // Clamp?
-    // motorL = abs(motorL) > maxSpeed ? maxSpeed : abs(motorL);
-    // motorL = abs(motorR) > maxSpeed ? maxSpeed : abs(motorR);
+    // Below minSpeed, nothing turns
+    // motorL = abs(motorL) < minSpeed ? minSpeed : abs(motorL);
+    // motorR = abs(motorR) < minSpeed ? minSpeed : abs(motorR);
 
     // Power to the motors
     if(!forceDisableMotors) {
       analogWrite(pwmPinA, motorL);  // abs makes out of -50 +50
-      ////analogWrite(pwmPinA, 100);  // test
       analogWrite(pwmPinB, motorR);  // abs makes out of -50 +50
-      ////analogWrite(pwmPinB, 33);  // test
     }
   }
 }
 
-bool isInDeadZone(int value, int idle, int deadzone) {
-  bool isBelow = value < idle - deadzone/2;
-  bool isAbove = value > idle + deadzone/2;
+bool isInDeathZone(int value, int idleValue, int deathZone) {
+  bool isBelow = value < idleValue - deathZone;
+  bool isAbove = value > idleValue + deathZone;
   return !(isBelow || isAbove);
 }
 
@@ -379,20 +469,46 @@ void headMovement(int X, int Y, int Z) {
   // Values between 1000 and 2000
   // No matter if the stick is leaning halfway in any direction, but its turned
   //   fully, always take the bigger (or smaller) value of Z
-  /*if(abs(Z-1500) > abs(X-1500)) {
+  if(abs(Z-1500) > abs(X-1500)) {
     X = Z < 1500 ? min(X, Z) : max(X, Z);
-  }*/
+  }
+
 
   // Smooth out the signal
-  float currentSmoothedX = exponentialMovingAverage(X, smoothedValueX, 0.1);
-  float currentSmoothedY = exponentialMovingAverage(Y, smoothedValueY, 0.1);
+  float smoothingX = 0.01;  // Depends on loop speed
+  float smoothingY = smoothingX/3;  // Depends on loop speed
+  // TODO: If X much greater than smoothedValueX, decrease smoothingX
+  //   eg. if moving stick fast, increase responsiveness
+  if(abs(X - smoothedValueX) > 100) {
+    smoothingX *= abs(X - smoothedValueX)/10;
+  } else if(abs(Y - smoothedValueY) > 100) {
+    smoothingY *= abs(Y - smoothedValueY)/10;
+  }
+  Serial.print("X - smoothedValueX: ");
+  Serial.print(X - smoothedValueX);
+
+  float currentSmoothedX = exponentialMovingAverage(X, smoothedValueX, smoothingX);
+  float currentSmoothedY = exponentialMovingAverage(Y, smoothedValueY, smoothingY);
   // float currentSmoothedZ = exponentialMovingAverage(Z, smoothedValueZ, 0.1);
 
   // Turning head X; ~120-170° range
-  servoX.write(map(currentSmoothedX, 1000, 2000, 120, 170));
+  /*int servoValueX = map(currentSmoothedX, 1000, 2000, 120, 170);
+  servoX.write(servoValueX);
 
   // Bending head Y; ~170 (geradeausschauen) - 150° (runterschauen) range
-  servoY.write(map(currentSmoothedY, 1000, 2000, 170, 150));
+  int servoValueY = map(currentSmoothedY, 1000, 2000, 175, 135);
+  servoY.write(servoValueY);*/
+
+  int servoValueX = map(currentSmoothedX, 1000, 2000, 1700, 2300);  // left, right
+  servoX.writeMicroseconds(servoValueX);
+  int servoValueY = map(currentSmoothedY, 1000, 2000, 2300, 1950);  // up, down
+  servoY.writeMicroseconds(servoValueY);
+  
+
+  Serial.print("\tservoValueX: ");
+  Serial.print(servoValueX);
+  Serial.print("\tservoValueY: ");
+  Serial.print(servoValueY);
 }
 
 int clampMap(int value, int valueFrom, int valueTo, int from, int to) {
@@ -401,17 +517,61 @@ int clampMap(int value, int valueFrom, int valueTo, int from, int to) {
   return map(value, valueFrom, valueTo, from, to);
 }
 
-
-// from chatGPT:
-/*
-  The decode function does the reverse of the encode function.
-  It takes an array of 9 integers (each representing the state of a group of 4 buttons)
-  and fills an array of 36 boolean values representing the state of each button.
-*/
-void decodeButtonStates(int encodedStates[9], bool buttonStates[36]) {
-  for (int i = 0; i < 9; i++) {
-    for (int j = 0; j < 4; j++) {
-      buttonStates[i * 4 + j] = (encodedStates[i] & (1 << j)) != 0;
+void detectLossOfSignal() {
+  // TODO: Does not work
+  int failsaveValues = joystickLX + joystickLY + joystickLZ + jostickRX + jostickRY + jostickRZ + joyBtnL + joyBtnR + enableDrive + enableHeadMovements;
+  int defaultValueSum = 8623;  //  technically: 6*1500 + 4*0, but IRL: 5*1500+1123 (first channel is 1123?!)
+  if(failsaveValues == defaultValueSum) {  // Todo: Loss of signal detection somehow. Kind of the same as the idle state?!
+    while(failsaveValues == defaultValueSum) {
+      Serial.println("Loss of signal - wait for reconnection");
+      readChannels();
+      failsaveValues = joystickLX + joystickLY + joystickLZ + jostickRX + jostickRY + jostickRZ + joyBtnL + joyBtnR + enableDrive + enableHeadMovements;
+      delay(25);
     }
   }
+}
+
+// Decode int from 1000 to 2000 and get array of 4 boolean values
+bool* decodeButtons(int encodedValue, bool* buttonStates) {
+    // Jitter of +/-32 can be handled
+    // static bool buttonStates[4];  // Static to preserve state after the function returns
+
+    // Define the exact encoded values for each combination of button states
+    int encodedStates[16] = {
+        1000, // 0000
+        1066, // 0001
+        1133, // 0010
+        1200, // 0011
+        1266, // 0100
+        1333, // 0101
+        1400, // 0110
+        1466, // 0111
+        1533, // 1000
+        1600, // 1001
+        1666, // 1010
+        1733, // 1011
+        1800, // 1100
+        1866, // 1101
+        1933, // 1110
+        2000  // 1111
+    };
+
+    // Find the closest encoded state
+    int closestIndex = 0;
+    int smallestDifference = abs(encodedValue - encodedStates[0]);
+    for (int i = 1; i < 16; i++) {
+        int diff = abs(encodedValue - encodedStates[i]);
+        if (diff < smallestDifference) {
+            smallestDifference = diff;
+            closestIndex = i;
+        }
+    }
+
+    // Decode the closest index into button states
+    buttonStates[0] = (closestIndex & 1) != 0;    // Least significant bit
+    buttonStates[1] = (closestIndex & 2) != 0;    // Second bit
+    buttonStates[2] = (closestIndex & 4) != 0;    // Third bit
+    buttonStates[3] = (closestIndex & 8) != 0;    // Most significant bit
+
+    return buttonStates;
 }
