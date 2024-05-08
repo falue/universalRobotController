@@ -239,6 +239,8 @@ void readChannels() {
   userBtn6 = decodedButtons2[3]; */
 
   poti1 = IBus.readChannel(8) + correction;
+  maxSpeed = map(poti1, 1000,2000, 10,255);
+
   poti2 = IBus.readChannel(9) + correction;
   ////// TODO: maxSpeed = map(poti1, 1000,2000, 10,255);
   ////// TODO: headMovementSmoothing = map(poti2, 1000,2000, 0.0005,0.75);
