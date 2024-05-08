@@ -1,9 +1,18 @@
+/*
+  This is a test for encoding 4 boolean values (eg., 4 switches or buttons) into an int value
+  between 1000 and 2000. Then, it decodes that value and compares both arrays of booleans and gives a verdict.
+  Change the jitter value to something bigger than +/-32 to see it fail in action.
+  
+  This is used over RF, so some jitter is expected. The decoder function
+  tries its best to interpret the values approprietly.
+  Test like this:
+    g++ -o encodeDecodeSwitches encodeDecodeSwitches.cpp && ./encodeDecodeSwitches
+*/
+
 #include <iostream>
 #include <algorithm> // For std::max and std::min
 #include <cmath>    // Include the cmath library for atan2 and constants
-
-// Test like this:
-//   g++ -o encodeDecodeSwitches encodeDecodeSwitches.cpp && ./encodeDecodeSwitches 
+ 
 
 int map(int x, int in_min, int in_max, int out_min, int out_max) {
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;

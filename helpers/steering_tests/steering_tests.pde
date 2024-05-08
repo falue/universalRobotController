@@ -1,3 +1,10 @@
+/*
+  This script visualizes the effect of the joystick and what is sent to the motors:
+  Which motor receives how much power under which conditions?
+  Potentially out of date compared to the main rx script.
+  Connect the receiving arduino ("RX") to the computer and set the correct index to the portName line 33.
+*/
+
 import processing.serial.*;
 
 Serial myPort;  // Create object from Serial class

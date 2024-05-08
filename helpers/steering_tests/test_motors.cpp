@@ -1,9 +1,13 @@
+/*
+  Some other outdated script to flesh out the motor speeds
+  Test like this:
+    g++ -o test_motors test_motors.cpp && ./test_motors 
+*/
+
 #include <iostream>
 #include <algorithm> // For std::max and std::min
 #include <cmath>    // Include the cmath library for atan2 and constants
 
-// Test like this:
-//   g++ -o test_motors test_motors.cpp && ./test_motors 
 
 /* int calculateMotorSpeed(int Y, int X, char motorSide) {
     int baseSpeed = Y; // Speed from the forward/backward joystick input

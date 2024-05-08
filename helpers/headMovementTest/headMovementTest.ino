@@ -1,10 +1,15 @@
-/* Sweep
- by BARRAGAN <http://barraganstudio.com>
- This example code is in the public domain.
+/*
+  Sweep
+  by BARRAGAN <http://barraganstudio.com>
+  This example code is in the public domain.
 
- modified 8 Nov 2013
- by Scott Fitzgerald
- http://www.arduino.cc/en/Tutorial/Sweep
+  modified 8 Nov 2013
+  by Scott Fitzgerald
+  http://www.arduino.cc/en/Tutorial/Sweep
+
+  modified 8.5. 2024
+  by Fabian Lüscher
+  this does a sweep of two servos consecutively from a min to a max position
 */
 
 #include <Servo.h>

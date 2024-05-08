@@ -1,9 +1,13 @@
+/*
+    Some other outdated script to flesh out the motor speeds
+    Test like this:
+      g++ -o test_ruleOfThree test_ruleOfThree.cpp && ./test_ruleOfThree 
+*/
+
 #include <iostream>
 #include <algorithm> // For std::max and std::min
 #include <cmath>    // Include the cmath library for atan2 and constants
 
-// Test like this:
-//   g++ -o test_ruleOfThree test_ruleOfThree.cpp && ./test_ruleOfThree 
 
 int ruleOfThree(int a, int b, int c) {
   //
