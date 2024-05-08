@@ -240,27 +240,15 @@ void loop() {
   }
 
   int encodedSwitches = encodeButtons(toggleSwitch1,toggleSwitch2,toggleSwitch3,toggleSwitch4);
-  int encodedButtons1 = encodeButtons(joyBtnL,joyBtnR,userBtn1,userBtn2);
-  int encodedButtons2 = encodeButtons(userBtn3,userBtn4,userBtn5,userBtn6);  // Not used
+  int encodedButtons = encodeButtons(joyBtnL,joyBtnR,userBtn1,userBtn2);
+  // int encodedButtons2 = encodeButtons(userBtn3,userBtn4,userBtn5,userBtn6);  // Not used
 
   // Values for first transmitter box
-  int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, encodedSwitches, encodedButtons1, poti1, poti2};
+  int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, encodedSwitches, encodedButtons, poti1, poti2};
   // int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, joyBtnL, joyBtnR, toggleSwitch1, toggleSwitch2};
-  // data test sent vs. received:
-  // longGap = 1000:
-  //   1000 => 1019 stable DIFF:19
-  //   1250 => 1269, 1275 unstable DIFF:19-25
-  //   1333 => 1352 or 1358 bistable DIFF:19-23
-  //   1500 => 1519 or 1525 bistable DIFF:19-25
-  //   1750 => 1769, 1775, 1776 unstable DIFF:19-26
-  //   1900 => 1925, 1926 DIFF:25-26
-  //   1950 => 1975, 1976 DIFF:25-26
-  //   1990 => 2011 ??? DIFF:11
-  //   2000 => 2011 stable DIFF:11
-
   sendSignal(transmitter1PpmPin, octave1, 10);
 
-  // Transmitter & receiver should work with 12 channels but cannot get it to transmit (or receive?) properly
+  // TODO: Transmitter & receiver should work with 12 channels but cannot get it to transmit (or receive?) properly
   // int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, joyBtnL, joyBtnR, toggleSwitch1, toggleSwitch2, toggleSwitch3, toggleSwitch4};
   // sendSignal(transmitter1PpmPin, octave1, 12);
 
