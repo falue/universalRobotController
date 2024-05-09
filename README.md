@@ -4,30 +4,40 @@
 
 This repository includes transmitter (TX) and receiver (RX) arduino files for a remote controlled robot of any form.
 
-The transmitter is a custom build to have full control over input mixing.
+The transmitter is a custom build to have full control over input mixing, skewing and do all sorts of dependencies.
 It depends on a custom PCB, or like a thousand wires.
 The receiver end can be a robot or whatever.
 
+This relies on OrangeRx products by hobbyking for Tx/Rx and uses the (legacy) DSM2/DSMX† protocols for a reliable, digital communication.
+with a "range of up to 3km (line of sight)".
+
 > Based on James Brutons RemoteDSM:
 > 
-> <https://github.com/XRobots/RemoteDSM>
+> [https://github.com/XRobots/RemoteDSM ↗](https://github.com/XRobots/RemoteDSM)
 > 
-> <https://youtu.be/5BfRg9CUMYI>
+> [https://youtu.be/5BfRg9CUMYI ↗](https://youtu.be/5BfRg9CUMYI)
+
+
+† "*The DSM in DSMX stands for Digital Spectrum Modulation and is what creates pure digital control providing an impenetrable radio link immune to all types of interference.*" ([Soruce ↗](https://www.spektrumrc.com/spm-bs-dsmx.html#:~:text=The%20DSM%20in%20DSMX%20stands,to%20all%20types%20of%20interference.))
 
 # Hardware
 ## TX
 - [Arduino Mega ↗](https://store.arduino.cc/products/arduino-mega-2560-rev3)
 - One thousand switches and buttons
 - One thousand linear potentiometers
+- Two three-axis joysticks (ali express article [1↗](https://de.aliexpress.com/item/4001270851701.html) or [2↗](https://de.aliexpress.com/item/1005002965907648.html)) with a pushbutton
 - A custom PCB (files here: [gerber.zip](kicad/universalRobotTx/gerber/gerber.zip) | [kicad](kicad/universalRobotTx))
 - A laser cut case (files here: [ai](cad/universal_robot_laser.ai) | [dxf](cad/universal_robot_laser.dxf) | [svg](cad/universal_robot_laser.svg))
 - One (or two) [OrangeRX DSMX DSM2 transmitter ↗](https://hobbyking.com/en_us/orangerx-dsmx-dsm2-compatible-2-4ghz-transmitter-module-v1-2.html)
+- *..extensive list has to follow*
 
 ## RX
 - [Arduino Leonardo (or UNO) ↗](https://store.arduino.cc/products/arduino-leonardo-with-headers)
 - [Arduino Motor Shield Rev3 ↗](https://store.arduino.cc/products/arduino-motor-shield-rev3)
 - One  (or two) [OrangeRx RR12RDTS Receiver ↗](https://hobbyking.com/en_us/orangerx-rr12rdts-receiver-with-s-link-dsm2-dsmx-compatible.html)
 - [OrangeRx Program box ↗](https://hobbyking.com/en_us/orangerx-program-box-for-r620x-r1220x-v3-rr12rdts-receivers.html)
+- *..extensive list has to follow*
+
 
 ---
 
