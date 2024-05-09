@@ -34,9 +34,9 @@ int jostickRY = 1500;
 int jostickRZ = 1500;
 bool joyBtnL = false;
 bool joyBtnR = false;
+bool enableAcceleratedSmoothing = false;
 
 // Unused btns
-bool toggleSwitch3 = false;
 bool toggleSwitch4 = false;
 bool userBtn1 = false;
 bool userBtn2 = false;
@@ -55,13 +55,15 @@ float smoothedValueX = float(jostickRX);
 float smoothedValueY = float(jostickRY);
 float smoothedValueZ = float(jostickRZ);
 
+float currentSmoothedX = smoothedValueX;
+float currentSmoothedY = smoothedValueY;
+
 // Limit the max speed of the robot
 // 0-254 *or* 0-100. This is up for dabate. The latter is mentioned in the docs of the
 // motor shield r3 but a weird thing, usually things like that are 0-254.
 int maxSpeed = 100;  // Changed by poti1
 int minSpeed = 33;   // Below this, the motors do not turn bc. of friction and not being spherical cows in space
-
-/// float smoothHeadMovement = 0.001 or so;  // Set by poti2
+float headMovementSmoothing = 0.01;
 
 // fakeRemoteInputs
 int directionX = 1, directionY = 1, directionZ = 1;
@@ -211,7 +213,7 @@ void readChannels() {
     ch3: joystickRX
     ch4: joystickRY
     ch5: joystickRZ
-    ch6: encodedSwitches: 0: toggleSwitch1, 1: toggleSwitch2, 2: toggleSwitch3, 3: toggleSwitch4
+    ch6: encodedSwitches: 0: toggleSwitch1, 1: toggleSwitch2, 2: enableAcceleratedSmoothing, 3: toggleSwitch4
     ch7: encodedButtons1: 0: joyBtnL,       1: joyBtnR,       2: userBtn1,      3: userBtn2
     ch8: poti1
     ch9: poti2
@@ -233,7 +235,7 @@ void readChannels() {
 
   enableDrive = decodedSwitches[0];
   enableHeadMovements = decodedSwitches[1];
-  toggleSwitch3 = decodedSwitches[2];
+  enableAcceleratedSmoothing = decodedSwitches[2];
   toggleSwitch4 = decodedSwitches[3];
 
   joyBtnL = decodedButtons[0];
@@ -249,8 +251,7 @@ void readChannels() {
   maxSpeed = map(poti1, 1000,2000, minSpeed,254);
 
   poti2 = IBus.readChannel(9) + correction;
-  ////// TODO: maxSpeed = map(poti1, 1000,2000, 10,255);
-  ////// TODO: headMovementSmoothing = map(poti2, 1000,2000, 0.0005,0.75);
+  headMovementSmoothing = map(poti2, 1000,2000, 1,5000) / 10000.0;  // 0.01 is good, but can be less or up to 1
 }
 
 void debugPrints() {
@@ -275,7 +276,7 @@ void debugPrints() {
   Serial.print("\tenHead: ");
   Serial.print(enableHeadMovements);
   Serial.print("\tswitch3: ");
-  Serial.print(toggleSwitch3);
+  Serial.print(enableAcceleratedSmoothing);
   Serial.print("\tswitch4: ");
   Serial.print(toggleSwitch4);
   Serial.print("\tBtn1: ");
@@ -421,33 +422,29 @@ void headMovement(int X, int Y, int Z) {
     X = Z < 1500 ? min(X, Z) : max(X, Z);
   }
 
-
   // Smooth out the signal
-  float smoothingX = 0.01;  // Depends on loop speed
-  float smoothingY = smoothingX/3;  // Depends on loop speed
-  // TODO: If X much greater than smoothedValueX, decrease smoothingX
+  float smoothingX = headMovementSmoothing;  // Depends on loop speed
+  float smoothingY = smoothingX/2.0;  // Depends on loop speed
+
+  // If X much greater than smoothedValueX, decrease smoothingX
   //   eg. if moving stick fast, increase responsiveness
-  if(abs(X - smoothedValueX) > 100) {
-    smoothingX *= abs(X - smoothedValueX)/10;
-  } else if(abs(Y - smoothedValueY) > 100) {
-    smoothingY *= abs(Y - smoothedValueY)/10;
+  if(enableAcceleratedSmoothing) {
+    if(abs(X - smoothedValueX) > 100) {
+      smoothingX *= abs(X - smoothedValueX)/10;
+    } else if(abs(Y - smoothedValueY) > 100) {
+      smoothingY *= abs(Y - smoothedValueY)/10;
+    }
+    smoothingX = clamp(smoothingX, 0.0, .5);
+    smoothingY = clamp(smoothingY, 0.0, .5);
   }
   Serial.print("X - smoothedValueX: ");
   Serial.print(X - smoothedValueX);
 
-  float currentSmoothedX = exponentialMovingAverage(X, smoothedValueX, smoothingX);
-  float currentSmoothedY = exponentialMovingAverage(Y, smoothedValueY, smoothingY);
+  currentSmoothedX = exponentialMovingAverage(X, smoothedValueX, smoothingX);
+  currentSmoothedY = exponentialMovingAverage(Y, smoothedValueY, smoothingY);
   // float currentSmoothedZ = exponentialMovingAverage(Z, smoothedValueZ, 0.1);
 
-  // Turning head X; ~120-170° range
-  /*int servoValueX = map(currentSmoothedX, 1000, 2000, 120, 170);
-  servoX.write(servoValueX);
-
-  // Bending head Y; ~170 (geradeausschauen) - 150° (runterschauen) range
-  int servoValueY = map(currentSmoothedY, 1000, 2000, 175, 135);
-  servoY.write(servoValueY);*/
-
-  int servoValueX = map(currentSmoothedX, 1000, 2000, 1700, 2300);  // left, right
+  int servoValueX = map(currentSmoothedX, 1000, 2000, 1750, 2300);  // left, right
   servoX.writeMicroseconds(servoValueX);
   int servoValueY = map(currentSmoothedY, 1000, 2000, 2300, 1950);  // up, down
   servoY.writeMicroseconds(servoValueY);
