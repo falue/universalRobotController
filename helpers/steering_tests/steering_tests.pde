@@ -95,20 +95,23 @@ int clamp(int value, int min, int max) {
    return value > max ? max : value < min ? min : value;
 }
 
-// https://github.com/edumardo/DifferentialSteering/
+float clamp(float value, float min, float max) {
+   return value > max ? max : value < min ? min : value;
+}
+
 int calculateMotorSpeed(int Y, int X, int Z, char motorSide) {
-  float mixer = 1;  // 0.825;  // 0.1 to 1.0
-  float minMixer = 0.25;
-  // if full forward/backward and left, use 0.25
+  float mixer = 1.0;
+  float minMixer = 0.5;
+  // if full forward/backward and left, use 0.5
   // if full left, use 1.0
-  mixer = 2-map(abs(Y)+abs(X), 0,maxSpeed, minMixer,1.0);
-  println(mixer);
+  mixer = 2.0 - map((abs(Y)+abs(X))*100, 0,maxSpeed*100, minMixer*100,100) / 100.0;
+  mixer = clamp(mixer, 0.1, 1.0);
   
   int leftMotor = Y + int(X*mixer);
   int rightMotor = Y - int(X*mixer);
   
-  leftMotor = clamp(leftMotor, -maxSpeed,maxSpeed);
-  rightMotor = clamp(rightMotor, -maxSpeed,maxSpeed);
+  leftMotor = clamp(leftMotor, -maxSpeed, maxSpeed);
+  rightMotor = clamp(rightMotor, -maxSpeed, maxSpeed);
   
   if (motorSide == 'L') {
     return leftMotor;

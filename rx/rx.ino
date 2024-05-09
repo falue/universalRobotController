@@ -239,7 +239,7 @@ void readChannels() {
   userBtn6 = decodedButtons2[3]; */
 
   poti1 = IBus.readChannel(8) + correction;
-  maxSpeed = map(poti1, 1000,2000, 10,255);
+  maxSpeed = map(poti1, 1000,2000, minSpeed,254);
 
   poti2 = IBus.readChannel(9) + correction;
   ////// TODO: maxSpeed = map(poti1, 1000,2000, 10,255);
@@ -282,11 +282,12 @@ void debugPrints() {
 }
 
 int calculateMotorSpeed(int Y, int X, int Z, char motorSide) {
-  float mixer = 1;  // 0.825;  // 0.1 to 1.0
-  float minMixer = 0.25;
-  // if full forward/backward and left, use 0.25
+  float mixer = 1.0;
+  float minMixer = 0.5;
+  // if full forward/backward and left, use 0.5
   // if full left, use 1.0
-  mixer = 2-map(abs(Y)+abs(X), 0,maxSpeed, minMixer,1.0);
+  mixer = 2.0 - map((abs(Y)+abs(X))*100, 0,maxSpeed*100, minMixer*100,100) / 100.0;
+  mixer = clamp(mixer, 0.1, 1.0);
   
   int leftMotor = Y + int(X*mixer);
   int rightMotor = Y - int(X*mixer);
@@ -295,20 +296,12 @@ int calculateMotorSpeed(int Y, int X, int Z, char motorSide) {
   rightMotor = clamp(rightMotor, -maxSpeed, maxSpeed);
   
   if (motorSide == 'L') {
+    Serial.print("\tmixer: ");
+    Serial.print(mixer);
     return leftMotor;
   } else {
     return rightMotor;
   }
-}
-
-int ruleOfThree(int a, int b, int c) {
-  //
-  if (b == 0) { // Check for division by zero
-      Serial.println("Error: Division by zero.");
-      return 0; // Return zero or an appropriate error value
-  }
-  int d = (c * b) / a;
-  return d;
 }
 
 void drive(int X, int Y, int Z) {
@@ -356,7 +349,6 @@ void drive(int X, int Y, int Z) {
     digitalWrite(directionPinA, motorL < 0);  // LOW to reverse
     digitalWrite(directionPinB, motorR < 0);  // LOW to reverse
 
-
     Serial.print("\tmotorL: ");
     Serial.print(motorL);
     Serial.print("\tdir_motorL: ");
@@ -372,10 +364,19 @@ void drive(int X, int Y, int Z) {
 
     // Power to the motors
     if(!forceDisableMotors) {
-      analogWrite(pwmPinA, motorL);  // abs makes out of -50 +50
-      analogWrite(pwmPinB, motorR);  // abs makes out of -50 +50
+      analogWrite(pwmPinA, abs(motorL));  // abs makes out of -50 +50
+      analogWrite(pwmPinB, abs(motorR));  // abs makes out of -50 +50
     }
   }
+
+  Serial.print("\tmotorL: ");
+  Serial.print(0);
+  Serial.print("\tdir_motorL: ");
+  Serial.print("idle");
+  Serial.print("\tmotorR: ");
+  Serial.print(0);
+  Serial.print("\tdir_motorR: ");
+  Serial.print("idle");
 }
 
 bool isInDeathZone(int value, int idleValue, int deathZone) {
@@ -435,6 +436,14 @@ void headMovement(int X, int Y, int Z) {
   Serial.print(servoValueX);
   Serial.print("\tservoValueY: ");
   Serial.print(servoValueY);
+}
+
+int clamp(int value, int min, int max) {
+   return value > max ? max : value < min ? min : value;
+}
+
+float clamp(float value, float min, float max) {
+   return value > max ? max : value < min ? min : value;
 }
 
 int clampMap(int value, int valueFrom, int valueTo, int from, int to) {
