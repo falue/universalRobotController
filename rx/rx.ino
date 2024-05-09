@@ -110,17 +110,19 @@ void loop() {
 
   drive(joystickLX, joystickLY, joystickLZ);
 
-  if(joyBtnL) {
-    quickturn("joyBtnL", -180);
-  }
-  if(joyBtnR) {
-    quickturn("joyBtnR", 180);
-  }
-  if(userBtn1) {
-    quickturn("userBtn1", -5);
-  }
-  if(userBtn2) {
-    quickturn("userBtn2", 5);
+  if(enableDrive) {
+    if(joyBtnL) {
+      quickturn("joyBtnL", -180);
+    }
+    if(joyBtnR) {
+      quickturn("joyBtnR", 180);
+    }
+    if(userBtn1) {
+      quickturn("userBtn1", -5);
+    }
+    if(userBtn2) {
+      quickturn("userBtn2", 5);
+    }
   }
   
 
