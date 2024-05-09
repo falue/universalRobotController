@@ -37,7 +37,7 @@ bool joyBtnR = false;
 bool enableAcceleratedSmoothing = false;
 
 // Unused btns
-bool toggleSwitch4 = false;
+bool disableSteering = false;
 bool userBtn1 = false;
 bool userBtn2 = false;
 // bool userBtn3 = false;  // not used
@@ -222,7 +222,7 @@ void readChannels() {
     ch3: joystickRX
     ch4: joystickRY
     ch5: joystickRZ
-    ch6: encodedSwitches: 0: toggleSwitch1, 1: toggleSwitch2, 2: enableAcceleratedSmoothing, 3: toggleSwitch4
+    ch6: encodedSwitches: 0: toggleSwitch1, 1: toggleSwitch2, 2: enableAcceleratedSmoothing, 3: disableSteering
     ch7: encodedButtons1: 0: joyBtnL,       1: joyBtnR,       2: userBtn1,      3: userBtn2
     ch8: poti1
     ch9: poti2
@@ -245,7 +245,7 @@ void readChannels() {
   enableDrive = decodedSwitches[0];
   enableHeadMovements = decodedSwitches[1];
   enableAcceleratedSmoothing = decodedSwitches[2];
-  toggleSwitch4 = decodedSwitches[3];
+  disableSteering = decodedSwitches[3];
 
   joyBtnL = decodedButtons[0];
   joyBtnR = decodedButtons[1];
@@ -287,7 +287,7 @@ void debugPrints() {
   Serial.print("\tswitch3: ");
   Serial.print(enableAcceleratedSmoothing);
   Serial.print("\tswitch4: ");
-  Serial.print(toggleSwitch4);
+  Serial.print(disableSteering);
   Serial.print("\tBtn1: ");
   Serial.print(userBtn1);
   Serial.print("\tBtn2: ");
@@ -350,6 +350,15 @@ void drive(int X, int Y, int Z) {
   X = clampMap(X, 1000,2000, -maxSpeed,maxSpeed);
   Y = clampMap(Y, 1000,2000, -maxSpeed,maxSpeed);
   Z = clampMap(Z, 1000,2000, maxSpeed,-maxSpeed);  // invert Z axis for some reason
+
+  if(disableSteering) {
+    X = 0;
+  }
+
+  // TODO: use Z for something
+  /*if(abs(Z-1500) > abs(X-1500)) {
+    X = Z < 1500 ? min(X, Z) : max(X, Z);
+  }*/
 
   if(idle || !enableDrive) {
     // Remote is not touched - engange breaks and do nothing
