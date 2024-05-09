@@ -331,20 +331,6 @@ void drive(int X, int Y, int Z) {
   int deathZone = 30;  // 35, 50 works too
   // If walues chang only very little, nothing is being controlled, i.e. robot should be idling
   bool idle = isInDeathZone(X, 1500, deathZone) && isInDeathZone(Y, 1500, deathZone) && isInDeathZone(Z-165, 1500, deathZone);  // Z-165 because cheap joystick & cannot be trimmed
-  /*Serial.print("X: ");
-  Serial.print(X);
-  Serial.print(" - ");
-  Serial.print(isInDeathZone(X, 1500, deathZone) ? "🔴" : "🟢");
-  Serial.print(" Y: ");
-  Serial.print(Y);
-  Serial.print("  - ");
-  Serial.print(isInDeathZone(Y, 1500, deathZone) ? "🔴" : "🟢");
-  Serial.print(" Z: ");
-  Serial.print(Z);
-  Serial.print("  - ");
-  Serial.print(isInDeathZone(Z-165, 1500, deathZone) ? "🔴" : "🟢");
-  Serial.print(" \t\t");
-  Serial.print(idle ? "IDLE: 🔴" : "RUN:  🟢");*/
 
   // Values between 1000 and 2000
   X = clampMap(X, 1000,2000, -maxSpeed,maxSpeed);
