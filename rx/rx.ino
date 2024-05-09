@@ -260,7 +260,7 @@ void readChannels() {
   maxSpeed = map(poti1, 1000,2000, minSpeed,254);
 
   poti2 = IBus.readChannel(9) + correction;
-  headMovementSmoothing = map(poti2, 1000,2000, 1,5000) / 10000.0;  // 0.01 is good, but can be less or up to 1
+  headMovementSmoothing = map(poti2, 1000,2000, 1,5000) / 100000.0;  // 0.01 is good, but can be less or up to 1
 }
 
 void debugPrints() {
@@ -479,11 +479,9 @@ void headMovement(int X, int Y, int Z) {
     } else if(abs(Y - smoothedValueY) > 100) {
       smoothingY *= abs(Y - smoothedValueY)/10;
     }
-    smoothingX = clamp(smoothingX, 0.0, .5);
-    smoothingY = clamp(smoothingY, 0.0, .5);
+    smoothingX = clamp(smoothingX, 0.0, .1);
+    smoothingY = clamp(smoothingY, 0.0, .1);
   }
-  Serial.print("X - smoothedValueX: ");
-  Serial.print(X - smoothedValueX);
 
   currentSmoothedX = exponentialMovingAverage(X, smoothedValueX, smoothingX);
   currentSmoothedY = exponentialMovingAverage(Y, smoothedValueY, smoothingY);
@@ -493,11 +491,6 @@ void headMovement(int X, int Y, int Z) {
   servoX.writeMicroseconds(servoValueX);
   int servoValueY = map(currentSmoothedY, 1000, 2000, 2300, 1950);  // up, down
   servoY.writeMicroseconds(servoValueY);
-
-  Serial.print("\tservoValueX: ");
-  Serial.print(servoValueX);
-  Serial.print("\tservoValueY: ");
-  Serial.print(servoValueY);
 }
 
 int clamp(int value, int min, int max) {
