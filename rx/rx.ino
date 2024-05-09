@@ -190,7 +190,7 @@ void fakeJoystickValues() {
 }
 
 void readChannels() {
-  int correction = -19;  // -19;  // Somehow all the values are shifted 11-26 points (weighted median 19)
+  int correction = -19;  // Somehow all the values are shifted 11-26 points (weighted median 19)
 
   // Call internal loop function to update the communication to the receiver.
   //   Needed if IBus.begin(); is called with second parameter "IBUSBM_NOTIMER"
@@ -279,6 +279,11 @@ void debugPrints() {
   Serial.print(poti1);
   Serial.print("\tpot2: ");
   Serial.print(poti2);
+
+  Serial.print("\tmaxSpeed: ");
+  Serial.print(maxSpeed);
+  Serial.print("\theadSmooth: ");
+  Serial.print(headMovementSmoothing);
 }
 
 int calculateMotorSpeed(int Y, int X, int Z, char motorSide) {
@@ -357,10 +362,6 @@ void drive(int X, int Y, int Z) {
     Serial.print(motorR);
     Serial.print("\tdir_motorR: ");
     Serial.print(motorR < 0 ? "back" : "forward");
-
-    // TODO: Below minSpeed, nothing turns
-    // motorL = abs(motorL) < minSpeed ? minSpeed : abs(motorL);
-    // motorR = abs(motorR) < minSpeed ? minSpeed : abs(motorR);
 
     // Power to the motors
     if(!forceDisableMotors) {
