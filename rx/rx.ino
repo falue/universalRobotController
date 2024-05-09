@@ -111,11 +111,18 @@ void loop() {
   drive(joystickLX, joystickLY, joystickLZ);
 
   if(joyBtnL) {
-    quickturn(-180);
+    quickturn("joyBtnL", -180);
   }
   if(joyBtnR) {
-    quickturn(180);
+    quickturn("joyBtnR", 180);
   }
+  if(userBtn1) {
+    quickturn("userBtn1", -5);
+  }
+  if(userBtn2) {
+    quickturn("userBtn2", 5);
+  }
+  
 
   if(enableHeadMovements) {
     if(!servoX.attached()) {
@@ -388,8 +395,32 @@ void drive(int X, int Y, int Z) {
   Serial.print("idle");
 }
 
-void quickturn(int deg) {
-  // On the press of a joystick button, make a quickturn left or right
+
+ bool debounce(String btnName) {
+  bool btnState = true;
+  while(btnState) {
+    readChannels();
+    if (btnName == "joyBtnL") {
+      btnState = joyBtnL;
+    } else if (btnName == "joyBtnR") {
+      btnState = joyBtnR;
+    } else if (btnName == "userBtn1") {
+      btnState = userBtn1;
+    } else if (btnName == "userBtn2") {
+      btnState = userBtn2;
+    } else {
+      Serial.println("This btn has to be hard coded here to be debounced");
+      btnState = false;
+    }
+    Serial.println("wait for btn release");
+    delay(1);
+  }
+}
+
+void quickturn(String btnName, int deg) {
+  // On the press of a joystick or user button, make a quickturn left or right
+  debounce(btnName);  // Waits for btn release
+
   // Release breaks
   digitalWrite(brakePinA, LOW);
   digitalWrite(brakePinB, LOW);
@@ -397,7 +428,10 @@ void quickturn(int deg) {
   digitalWrite(directionPinB, deg < 0 ? LOW : HIGH);   // LOW to reverse
   analogWrite(pwmPinA, 100);
   analogWrite(pwmPinB, 100);
-  delay(444);  // Depends on ground
+  int durationOfTurn = abs(deg)*2.6;
+  Serial.println("Fast turn duration: ");
+  Serial.print(durationOfTurn);
+  delay(durationOfTurn); // Depends on ground and grip of tracks
 }
 
 bool isInDeathZone(int value, int idleValue, int deathZone) {
