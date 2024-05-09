@@ -318,7 +318,7 @@ int calculateMotorSpeed(int Y, int X, int Z, char motorSide) {
 
 void drive(int X, int Y, int Z) {
   /* Terack movement */
-  int deathZone = 25;  // 35, 50 works too
+  int deathZone = 30;  // 35, 50 works too
   // If walues chang only very little, nothing is being controlled, i.e. robot should be idling
   bool idle = isInDeathZone(X, 1500, deathZone) && isInDeathZone(Y, 1500, deathZone) && isInDeathZone(Z-165, 1500, deathZone);  // Z-165 because cheap joystick & cannot be trimmed
   /*Serial.print("X: ");
