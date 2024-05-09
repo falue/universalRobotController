@@ -12,11 +12,12 @@ String val;     // Data received from the serial port
 int LX = 1500, LY = 1500, LZ = 1500;
 int motorL = 0, motorR = 0;
 String dir_motorL = "forward", dir_motorR = "forward";
+int maxSpeed = 100;
 
-Boolean use_Serial = true;
+Boolean use_Serial = false;
 
 float handleX, handleY; // Position of the joystick handle
-float handleRadius = 50; // Radius of the draggable handle
+float handleRadius = 75; // Radius of the draggable handle
 boolean dragging = false; // Is the handle being dragged?
 
 int heightWindow = 666;
@@ -33,10 +34,14 @@ void setup() {
   println("Available serial ports:");
   // Print all the available serial ports
   printArray(Serial.list());
-  
-  String portName = Serial.list()[9]; // Change this to your Arduino port
-  myPort = new Serial(this, portName, 115200);
-  myPort.bufferUntil('\n');          // Buffer until a newline character
+  String portName;
+
+  if(use_Serial) {
+    portName = Serial.list()[9]; // Change this to your Arduino port
+    myPort = new Serial(this, portName, 115200);
+    myPort.bufferUntil('\n');          // Buffer until a newline character
+  }
+    
   
   handleX = circleX; // Initially place handle at the center of the base
   handleY = circleY;
@@ -48,14 +53,15 @@ void draw() {
   textSize(16);
   textAlign(LEFT);
   // Display the serial data at position (10, 20)
-  text("LX: " + LX + ", LY: " + LY + ", LZ: " + LZ + ", Motor L: " + motorL + ", Motor R: " + motorR, 10, 20);
+  text("LX: " + LX + "    LY: " + LY + "    LZ: " + LZ + "    Motor L: " + motorL + "    Motor R: " + motorR, 10, 20);
   
   joystick(LX, LY, LZ); // Mid values for LX and LY
   
   tracks(motorL, motorR); // Mid-range values for motorL and motorR
 }
-/*
+
 void mousePressed() {
+  if(use_Serial) return;
   float d = dist(mouseX, mouseY, handleX, handleY);
   if (d < handleRadius) {
     dragging = true;
@@ -68,11 +74,121 @@ void mouseReleased() {
 
 void mouseDragged() {
   if (dragging) {
-    LX = int(map(mouseX, 0,1200, 1000,2000));
-    motorL = int(map(mouseX, 0,1200, 0,100));
-    LY = int(map(mouseY, 0,666, 1000,2000));
+    LX = int(map(mouseX, 20,120, 1000,2000));
+    LY = int(map(mouseY, 666,666-120, 1000,2000));
+    LX = LX > 2000 ? 2000 : LX < 1000 ? 1000 : LX;
+    LY = LY > 2000 ? 2000 : LY < 1000 ? 1000 : LY;
+    
+    int tempLX = int(map(LX, 1000,2000, -maxSpeed,maxSpeed));
+    int tempLY = int(map(LY, 1000,2000, -maxSpeed,maxSpeed));
+    
+    motorL = calculateMotorSpeed(tempLY, tempLX, 0, 'L');
+    motorR = calculateMotorSpeed(tempLY, tempLX, 0, 'R');
+    dir_motorL = motorL < 0 ? "back" : "forward";
+    dir_motorR = motorR < 0 ? "back" : "forward";
+    motorL = abs(motorL);
+    motorR = abs(motorR);
   }
-}*/
+}
+
+// https://github.com/edumardo/DifferentialSteering/
+int calculateMotorSpeed(int Y, int X, int Z, char motorSide) {
+  /*
+    Ev.:
+      Werte in mL und mR separieren, erst dann kombinieren?
+      dann mappen, constrainen?
+      mL = Y <= 0 ? abs(Y) : Y;
+      mL = X <= 0 ? abs(X) : X;
+
+    alternativ:
+      mL = Y + X/2;
+      mR = Y - X/2;
+      dann dreisatz machen, nicht map, falls wert über 100 ist
+      also sowas:
+
+      if mL > 100 {
+      mL = dreisatz(mL, 100, mR)
+  */
+
+  // TODO: maybe only use mixer if something something?
+  float mixer = 0.5;  // 0.825;  // 0.1 to 1.0
+  int leftMotor = Y + int(X*mixer);
+  int rightMotor = Y - int(X*mixer);
+  
+
+  if(leftMotor > maxSpeed) {
+    // leftMotor = ruleOfThree(leftMotor, maxSpeed, rightMotor);
+    //
+     // lefMotor     | maxSpeed (100) |
+    //   rightMotor  |       n        |
+    //  Solve n
+    //
+    //Serial.print("L>max");
+    // rightMotor = ruleOfThree(leftMotor, maxSpeed, rightMotor);
+    leftMotor = maxSpeed;
+  } else if(leftMotor < -maxSpeed) {
+    //Serial.print("L<min");
+    // // leftMotor = ruleOfThree(leftMotor, maxSpeed, rightMotor);
+    // rightMotor = ruleOfThree(leftMotor, -maxSpeed, rightMotor);
+    leftMotor = -maxSpeed;
+  }
+  // else if(rightMotor > maxSpeed) {
+  // //  leftMotor = ruleOfThree(rightMotor, maxSpeed, leftMotor);
+    // // rightMotor = ruleOfThree(leftMotor, maxSpeed, rightMotor);
+  //  rightMotor = maxSpeed;
+  //}//
+  if(rightMotor > maxSpeed) {
+    //Serial.print("R>max");
+    // //leftMotor = ruleOfThree(rightMotor, maxSpeed, leftMotor);
+    // rightMotor = ruleOfThree(rightMotor, maxSpeed, leftMotor);
+    rightMotor = maxSpeed;
+  } else if(rightMotor < -maxSpeed) {
+    //Serial.print("R<min");
+    // //leftMotor = ruleOfThree(rightMotor, maxSpeed, leftMotor);
+    // rightMotor = ruleOfThree(rightMotor, -maxSpeed, leftMotor);
+    rightMotor = -maxSpeed;
+  }
+
+  /*
+    float   nMotPremixL = 0;    // Motor (left)  premixed output        (-127..+127)
+    float   nMotPremixR = 0;    // Motor (right) premixed output        (-127..+127)
+    int     nPivSpeed = 0;      // Pivot Speed                          (-127..+127)
+    float   fPivScale = 0;      // Balance scale b/w drive and pivot    (   0..1   )
+    int     computeRange = 127; // 127 (orig), maybe 255 or maxSpeed?
+    int     m_fPivYLimit = 4;  // 32, what ever this is - kinda deathZone?
+
+    // Calculate Drive Turn output due to Joystick X input
+    if (Y >= 0) {
+        // Forward
+        nMotPremixL = (X >= 0) ? computeRange : (computeRange + X);
+        nMotPremixR = (X >= 0) ? (computeRange - X) : computeRange;
+    } else {
+        // Reverse
+        nMotPremixL = (X >= 0) ? (computeRange - X) : computeRange;
+        nMotPremixR = (X >= 0) ? computeRange : (computeRange + X);
+    }
+
+    // Scale Drive output due to Joystick Y input (throttle)
+    nMotPremixL = nMotPremixL * Y / computeRange;
+    nMotPremixR = nMotPremixR * Y / computeRange;
+
+    // Now calculate pivot amount
+    //   Strength of pivot (nPivSpeed) based on Joystick X input
+    //   Blending of pivot vs drive (fPivScale) based on Joystick Y input
+    nPivSpeed = X;
+    fPivScale = (abs(Y) > m_fPivYLimit) ? 0.0 : (1.0 - abs(Y) / m_fPivYLimit);
+
+    // Calculate final mix of Drive and Pivot
+    int leftMotor  = (1.0 - fPivScale) * nMotPremixL + fPivScale * ( nPivSpeed);
+    int rightMotor = (1.0 - fPivScale) * nMotPremixR + fPivScale * (-nPivSpeed);
+    */
+
+    if (motorSide == 'L') {
+      return leftMotor;
+    } else {
+      return rightMotor;
+    }
+}
 
 
 // Function to draw the joystick representation
@@ -122,8 +238,8 @@ void tracks(int motorL, int motorR) {
   
 
   // Map motor values from 1000-2000 to 0-trackHeight for the fill level
-  int fillHeightL = int(map(motorL, 0, 100, 0, trackHeight));
-  int fillHeightR = int(map(motorR, 0, 100, 0, trackHeight));
+  int fillHeightL = int(map(motorL, 0, maxSpeed, 0, trackHeight));
+  int fillHeightR = int(map(motorR, 0, maxSpeed, 0, trackHeight));
 
   // Draw the inner rectangles (filled based on motor values)
   noStroke();
@@ -146,7 +262,7 @@ void tracks(int motorL, int motorR) {
   strokeWeight(1); // Thick line
   stroke(133,133,133); // red outline
   noFill(); // No fill for the outer rectangles
-  rect(trackX1+trackWidth+10, height - margin - trackHeight+20, 80, 80);
+  rect(trackX1+trackWidth+10, height - margin - 80, 80, 80);
   
   // Draw the outer rectangles (tracks)
   strokeWeight(2); // Thick line
