@@ -281,103 +281,24 @@ void debugPrints() {
   Serial.print(poti2);
 }
 
-// https://github.com/edumardo/DifferentialSteering/
 int calculateMotorSpeed(int Y, int X, int Z, char motorSide) {
-  /*
-    Ev.:
-      Werte in mL und mR separieren, erst dann kombinieren?
-      dann mappen, constrainen?
-      mL = Y <= 0 ? abs(Y) : Y;
-      mL = X <= 0 ? abs(X) : X;
-
-    alternativ:
-      mL = Y + X/2;
-      mR = Y - X/2;
-      dann dreisatz machen, nicht map, falls wert über 100 ist
-      also sowas:
-
-      if mL > 100 {
-      mL = dreisatz(mL, 100, mR)
-  */
-
-  // TODO: maybe only use mixer if something something?
-  float mixer = 0.825;  // 0.1 to 1.0
-  int leftMotor = Y + X*mixer;
-  int rightMotor = Y - X*mixer;
-
-  if(leftMotor > maxSpeed) {
-    // leftMotor = ruleOfThree(leftMotor, maxSpeed, rightMotor);
-    //
-     // lefMotor     | maxSpeed (100) |
-    //   rightMotor  |       n        |
-    //  Solve n
-    //
-    Serial.print("L>max");
-    // rightMotor = ruleOfThree(leftMotor, maxSpeed, rightMotor);
-    leftMotor = maxSpeed;
-  } else if(leftMotor < -maxSpeed) {
-    Serial.print("L<min");
-    // // leftMotor = ruleOfThree(leftMotor, maxSpeed, rightMotor);
-    // rightMotor = ruleOfThree(leftMotor, -maxSpeed, rightMotor);
-    leftMotor = -maxSpeed;
+  float mixer = 1;  // 0.825;  // 0.1 to 1.0
+  float minMixer = 0.25;
+  // if full forward/backward and left, use 0.25
+  // if full left, use 1.0
+  mixer = 2-map(abs(Y)+abs(X), 0,maxSpeed, minMixer,1.0);
+  
+  int leftMotor = Y + int(X*mixer);
+  int rightMotor = Y - int(X*mixer);
+  
+  leftMotor = clamp(leftMotor, -maxSpeed, maxSpeed);
+  rightMotor = clamp(rightMotor, -maxSpeed, maxSpeed);
+  
+  if (motorSide == 'L') {
+    return leftMotor;
+  } else {
+    return rightMotor;
   }
-  // else if(rightMotor > maxSpeed) {
-  // //  leftMotor = ruleOfThree(rightMotor, maxSpeed, leftMotor);
-    // // rightMotor = ruleOfThree(leftMotor, maxSpeed, rightMotor);
-  //  rightMotor = maxSpeed;
-  //}//
-  if(rightMotor > maxSpeed) {
-    Serial.print("R>max");
-    // //leftMotor = ruleOfThree(rightMotor, maxSpeed, leftMotor);
-    // rightMotor = ruleOfThree(rightMotor, maxSpeed, leftMotor);
-    rightMotor = maxSpeed;
-  } else if(rightMotor < -maxSpeed) {
-    Serial.print("R<min");
-    // //leftMotor = ruleOfThree(rightMotor, maxSpeed, leftMotor);
-    // rightMotor = ruleOfThree(rightMotor, -maxSpeed, leftMotor);
-    rightMotor = -maxSpeed;
-  }
-
-  /*
-    float   nMotPremixL = 0;    // Motor (left)  premixed output        (-127..+127)
-    float   nMotPremixR = 0;    // Motor (right) premixed output        (-127..+127)
-    int     nPivSpeed = 0;      // Pivot Speed                          (-127..+127)
-    float   fPivScale = 0;      // Balance scale b/w drive and pivot    (   0..1   )
-    int     computeRange = 127; // 127 (orig), maybe 255 or maxSpeed?
-    int     m_fPivYLimit = 4;  // 32, what ever this is - kinda deathZone?
-
-    // Calculate Drive Turn output due to Joystick X input
-    if (Y >= 0) {
-        // Forward
-        nMotPremixL = (X >= 0) ? computeRange : (computeRange + X);
-        nMotPremixR = (X >= 0) ? (computeRange - X) : computeRange;
-    } else {
-        // Reverse
-        nMotPremixL = (X >= 0) ? (computeRange - X) : computeRange;
-        nMotPremixR = (X >= 0) ? computeRange : (computeRange + X);
-    }
-
-    // Scale Drive output due to Joystick Y input (throttle)
-    nMotPremixL = nMotPremixL * Y / computeRange;
-    nMotPremixR = nMotPremixR * Y / computeRange;
-
-    // Now calculate pivot amount
-    //   Strength of pivot (nPivSpeed) based on Joystick X input
-    //   Blending of pivot vs drive (fPivScale) based on Joystick Y input
-    nPivSpeed = X;
-    fPivScale = (abs(Y) > m_fPivYLimit) ? 0.0 : (1.0 - abs(Y) / m_fPivYLimit);
-
-    // Calculate final mix of Drive and Pivot
-    int leftMotor  = (1.0 - fPivScale) * nMotPremixL + fPivScale * ( nPivSpeed);
-    int rightMotor = (1.0 - fPivScale) * nMotPremixR + fPivScale * (-nPivSpeed);
-    */
-
-    if (motorSide == 'L') {
-      return leftMotor;
-    } else {
-      return rightMotor;
-    }
-    return 0; // Default return in case of an unexpected motorSide input
 }
 
 int ruleOfThree(int a, int b, int c) {
