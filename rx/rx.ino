@@ -108,6 +108,13 @@ void loop() {
 
   drive(joystickLX, joystickLY, joystickLZ);
 
+  if(joyBtnL) {
+    quickturn(-180);
+  }
+  if(joyBtnR) {
+    quickturn(180);
+  }
+
   if(enableHeadMovements) {
     if(!servoX.attached()) {
       servoX.attach(servoXPin);
@@ -378,6 +385,18 @@ void drive(int X, int Y, int Z) {
   Serial.print(0);
   Serial.print("\tdir_motorR: ");
   Serial.print("idle");
+}
+
+void quickturn(int deg) {
+  // On the press of a joystick button, make a quickturn left or right
+  // Release breaks
+  digitalWrite(brakePinA, LOW);
+  digitalWrite(brakePinB, LOW);
+  digitalWrite(directionPinA, deg > 0 ? LOW : HIGH);   // LOW to reverse
+  digitalWrite(directionPinB, deg < 0 ? LOW : HIGH);   // LOW to reverse
+  analogWrite(pwmPinA, 100);
+  analogWrite(pwmPinB, 100);
+  delay(444);  // Depends on ground
 }
 
 bool isInDeathZone(int value, int idleValue, int deathZone) {
