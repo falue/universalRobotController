@@ -47,8 +47,8 @@ bool userBtn2 = false;
 int poti1 = 1500;
 int poti2 = 1500;
 
-bool decodedSwitches[4];
-bool decodedButtons[4];
+bool decodedButtons0[4];
+bool decodedButtons1[4];
 
 // Smoothing servos
 float smoothedValueX = float(jostickRX);
@@ -208,24 +208,35 @@ void fakeJoystickValues() {
 }
 
 void readChannels() {
-  int correction = -19;  // Somehow all the values are shifted 11-26 points (weighted median 19)
-
   // Call internal loop function to update the communication to the receiver.
   //   Needed if IBus.begin(); is called with second parameter "IBUSBM_NOTIMER"
   IBus.loop();
+  int correction = -19;  // Somehow all the values are shifted 11-26 points (weighted median ~19)
 
   /*
-  Sent by TX:
+  Sent by TX1:
     ch0: joystickLX
     ch1: joystickLY
     ch2: joystickLZ
     ch3: joystickRX
     ch4: joystickRY
     ch5: joystickRZ
-    ch6: encodedSwitches: 0: toggleSwitch1, 1: toggleSwitch2, 2: enableAcceleratedSmoothing, 3: disableSteering
-    ch7: encodedButtons1: 0: joyBtnL,       1: joyBtnR,       2: userBtn1,      3: userBtn2
+    ch6: encodedButtons0 = {0: toggleSwitch1 1: toggleSwitch2 2: toggleSwitch3 3: toggleSwitch4}
+    ch7: encodedButtons1 = {0: joyBtnL       1: joyBtnR       2: userBtn1      3: userBtn2}
     ch8: poti1
     ch9: poti2
+  
+  Sent by TX2 (if enabled):
+    ch10: poti3
+    ch11: poti4
+    ch12: poti5
+    ch13: poti6
+    ch14: encodedButtons2 = {0: toggleSwitch5 1: toggleSwitch6 2: userBtn3  3: userBtn4}
+    ch15: encodedButtons3 = {0: userBtn5      1: userBtn6      2: userBtn7  3: userBtn8}
+    ch16: encodedButtons4 = {0: userBtn9      1: userBtn10     2: userBtn11 3: userBtn12}
+    ch17: encodedButtons5 = {0: userBtn13     1: userBtn14     2: userBtn15 3: userBtn18}
+    ch18: encodedButtons6 = {0: userBtn19     1: sysBtn1       2: sysBtn2   3: sysBtn3}
+    ch19: 1500 (NC - not connected)
   */
 
   // Get the latest IBus data from cached data
@@ -238,23 +249,19 @@ void readChannels() {
   jostickRZ = IBus.readChannel(5) + correction;
   
   // Add bool array to function because memory leaks
-  decodeButtons(IBus.readChannel(6) + correction, decodedSwitches);
-  decodeButtons(IBus.readChannel(7) + correction, decodedButtons);
+  decodeButtons(IBus.readChannel(6) + correction, decodedButtons0);
+  decodeButtons(IBus.readChannel(7) + correction, decodedButtons1);
   // bool* decodedButtons2 = decodeButtons(IBus.readChannel(8) + correction);  // Not used
 
-  enableDrive = decodedSwitches[0];
-  enableHeadMovements = decodedSwitches[1];
-  enableAcceleratedSmoothing = decodedSwitches[2];
-  disableSteering = decodedSwitches[3];
+  enableDrive = decodedButtons0[0];
+  enableHeadMovements = decodedButtons0[1];
+  enableAcceleratedSmoothing = decodedButtons0[2];
+  disableSteering = decodedButtons0[3];
 
-  joyBtnL = decodedButtons[0];
-  joyBtnR = decodedButtons[1];
-  userBtn1 = decodedButtons[2];
-  userBtn2 = decodedButtons[3];
-  /* userBtn3 = decodedButtons2[0];
-  userBtn4 = decodedButtons2[1];
-  userBtn5 = decodedButtons2[2];
-  userBtn6 = decodedButtons2[3]; */
+  joyBtnL = decodedButtons1[0];
+  joyBtnR = decodedButtons1[1];
+  userBtn1 = decodedButtons1[2];
+  userBtn2 = decodedButtons1[3];
 
   poti1 = IBus.readChannel(8) + correction;
   maxSpeed = map(poti1, 1000,2000, minSpeed,254);
