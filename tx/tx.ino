@@ -5,7 +5,8 @@
 */
 
 // OPTIONS
-bool trim = true;  // If true, poti 7,8,9,10 trim LX, LY, RX,RY
+bool trim = true;     // If true, poti 7,8,9,10 trim LX,LY,RX,RY. If false, those potis are not used.
+int trimRange = 255;  // Plus minus half of that trims LX,LY,RX,RY
 bool useSecondTransmitter = false;  // Send all btns and switches data over the second transmitter
 
 // USER INPUT -------------------------------------
@@ -294,8 +295,8 @@ void readInputs() {
   userBtn19 = !digitalRead(userBtn19Pin);
 
   if(trim) {
-    joystickLX =map(analogRead(joystickLXPin), 0,1023,1000,2000) + map(analogRead(poti7Pin), 0, 1024, -512, 512);
-    joystickLY =map(analogRead(joystickLYPin), 0,1023,1000,2000) + map(analogRead(poti8Pin), 0, 1024, -512, 512);
+    joystickLX =map(analogRead(joystickLXPin), 0,1023,1000,2000) + map(analogRead(poti7Pin), 0, 1024, trimRange/2*-1, trimRange/2);
+    joystickLY =map(analogRead(joystickLYPin), 0,1023,1000,2000) + map(analogRead(poti8Pin), 0, 1024, trimRange/2*-1, trimRange/2);
   } else {
     joystickLX = map(analogRead(joystickLXPin), 0,1023,1000,2000);  
     joystickLY = map(analogRead(joystickLYPin), 0,1023,1000,2000);  
@@ -304,8 +305,8 @@ void readInputs() {
   joyBtnL = !digitalRead(joyBtnLPin);
 
   if(trim) {
-    joystickRX =map(analogRead(joystickRXPin), 0,1023,1000,2000) + map(analogRead(poti9Pin), 0, 1024, -512, 512);
-    joystickRY =map(analogRead(joystickRYPin), 0,1023,1000,2000) + map(analogRead(poti10Pin), 0, 1024, -512, 512);
+    joystickRX =map(analogRead(joystickRXPin), 0,1023,1000,2000) + map(analogRead(poti9Pin), 0, 1024, trimRange/2*-1, trimRange/2);
+    joystickRY =map(analogRead(joystickRYPin), 0,1023,1000,2000) + map(analogRead(poti10Pin), 0, 1024, trimRange/2*-1, trimRange/2);
   } else {
     joystickRX = map(analogRead(joystickRXPin), 0,1023,1000,2000);  
     joystickRY = map(analogRead(joystickRYPin), 0,1023,1000,2000);  
