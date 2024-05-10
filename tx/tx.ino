@@ -6,6 +6,7 @@
 
 // OPTIONS
 bool trim = true;  // If true, poti 7,8,9,10 trim LX, LY, RX,RY
+bool useSecondTransmitter = false;  // Send all btns and switches data over the second transmitter
 
 // USER INPUT -------------------------------------
 int toggleSwitch1Pin = 31;  // Switch on top, left
@@ -210,7 +211,6 @@ void setup() {
   } else {
     Serial.println("LED tests - jumped");
     sysLED(0,0,ledBrightness);
-
   }
   
   Serial.println("Setup completed.");
@@ -239,22 +239,24 @@ void loop() {
     printSignals();
   }
 
-  int encodedSwitches = encodeButtons(toggleSwitch1,toggleSwitch2,toggleSwitch3,toggleSwitch4);
-  int encodedButtons = encodeButtons(joyBtnL,joyBtnR,userBtn1,userBtn2);
-  // int encodedButtons2 = encodeButtons(userBtn3,userBtn4,userBtn5,userBtn6);  // Not used
-
-  // Values for first transmitter box
-  int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, encodedSwitches, encodedButtons, poti1, poti2};
-  // int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, joyBtnL, joyBtnR, toggleSwitch1, toggleSwitch2};
+  // Values for first transmitter box - these are the most important ones
+  // TODO: Transmitter & receiver should work with 12 channels but cannot get it to transmit (or receive?) with more than 10
+  int encodedButtons0 = encodeButtons(toggleSwitch1,toggleSwitch2,toggleSwitch3,toggleSwitch4);
+  int encodedButtons1 = encodeButtons(joyBtnL,joyBtnR,userBtn1,userBtn2);
+  int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, encodedButtons0, encodedButtons1, poti1, poti2};
   sendSignal(transmitter1PpmPin, octave1, 10);
 
-  // TODO: Transmitter & receiver should work with 12 channels but cannot get it to transmit (or receive?) properly
-  // int octave1[] = {joystickLX, joystickLY, joystickLZ, joystickRX, joystickRY, joystickRZ, joyBtnL, joyBtnR, toggleSwitch1, toggleSwitch2, toggleSwitch3, toggleSwitch4};
-  // sendSignal(transmitter1PpmPin, octave1, 12);
-
   // Values for second transmitter box
-  int octave2[] = {};
-  sendSignal(transmitter2PpmPin, octave2, 0);  // Maybe in parallel?
+  // One full channel and 3 switches still fit in the signal
+  if(useSecondTransmitter) {
+    int encodedButtons2 = encodeButtons(toggleSwitch5, toggleSwitch6, userBtn3, userBtn4);
+    int encodedButtons3 = encodeButtons(userBtn5, userBtn6, userBtn7, userBtn8);
+    int encodedButtons4 = encodeButtons(userBtn9, userBtn10, userBtn11, userBtn12);
+    int encodedButtons5 = encodeButtons(userBtn13, userBtn14, userBtn15, userBtn18);
+    int encodedButtons6 = encodeButtons(userBtn19, sysBtn1, sysBtn2, sysBtn3);  // sysBtns make no sense to send but they fit in here, and who knows?
+    int octave2[] = {poti3, poti4, poti5, poti6, encodedButtons2, encodedButtons3, encodedButtons4, encodedButtons5, encodedButtons6, 1500};
+    sendSignal(transmitter2PpmPin, octave2, 10);
+  }
 
   catchSystemButtons();
 }
