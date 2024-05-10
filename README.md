@@ -10,6 +10,7 @@ The receiver end can be a robot or whatever.
 
 This relies on OrangeRx products by hobbyking for Tx/Rx and uses the (legacy) DSM2/DSMX† protocols for a reliable, digital communication.
 with a "range of up to 3km (line of sight)".
+I'm sure though this works with any RC transmitter that uses iBUs / ppm.
 
 > Based on James Brutons RemoteDSM:
 > 
@@ -19,6 +20,16 @@ with a "range of up to 3km (line of sight)".
 
 
 † "*The DSM in DSMX stands for Digital Spectrum Modulation and is what creates pure digital control providing an impenetrable radio link immune to all types of interference.*" ([Soruce ↗](https://www.spektrumrc.com/spm-bs-dsmx.html#:~:text=The%20DSM%20in%20DSMX%20stands,to%20all%20types%20of%20interference.))
+
+# Transmission speed
+Depending if you need 10 or 20 channels you can choose to use a second transmitter.
+The second transmitter leads to more fluctation and/or longer duration of the main `loop()` though. If you need snappy response times, reconsider using a second transmitter.
+
+|Num of Transmitters|Range (ms)|Average (ms)|Median (ms)|
+|--|--|--|--|
+|1|30-69|31|32|
+|2|28-70|45|33|
+
 
 # Hardware
 ## TX
