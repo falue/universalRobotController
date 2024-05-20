@@ -251,7 +251,6 @@ void readChannels() {
   // Add bool array to function because memory leaks
   decodeButtons(IBus.readChannel(6) + correction, decodedButtons0);
   decodeButtons(IBus.readChannel(7) + correction, decodedButtons1);
-  // bool* decodedButtons2 = decodeButtons(IBus.readChannel(8) + correction);  // Not used
 
   enableDrive = decodedButtons0[0];
   enableHeadMovements = decodedButtons0[1];
@@ -311,6 +310,7 @@ void debugPrints() {
 }
 
 int calculateMotorSpeed(int Y, int X, int Z, char motorSide) {
+  // TODO: Z is ignored now
   float mixer = 1.0;
   float minMixer = 0.5;
   // if full forward/backward and left, use 0.5
@@ -416,7 +416,8 @@ void drive(int X, int Y, int Z) {
       Serial.println("This btn has to be hard coded here to be debounced");
       btnState = false;
     }
-    Serial.println("wait for btn release");
+    Serial.print(btnName);
+    Serial.println(" - wait for btn release");
     delay(1);
   }
 }
