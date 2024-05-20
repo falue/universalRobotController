@@ -482,7 +482,9 @@ void headMovement(int X, int Y, int Z) {
 
   int servoValueX = map(currentSmoothedX, 1000, 2000, 1750, 2300);  // left, right
   servoX.writeMicroseconds(servoValueX);
-  int servoValueY = map(currentSmoothedY, 1000, 2000, 2300, 1950);  // up, down
+  // Recenter head vertically
+  int servoValueY = map(currentSmoothedY, 1000, 2000, 2050, 1675);  // up, down
+  //servoValueY = clamp(servoValueY, 1675, 2050);  // recenter?
   servoY.writeMicroseconds(servoValueY);
 }
 

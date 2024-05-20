@@ -17,18 +17,20 @@
 Servo myservoX;  // create servo object to control a servo
 Servo myservoY;  // create servo object to control a servo
 // twelve servo objects can be created on most boards
+int servoXPin = 2;
+int servoYPin = 10;
 
 
 int minX = 1700;  // links min X
 int maxX = 2300;  // rechts max X
-int minY = 1950;  // runter min Y
-int maxY = 2300;  // hoch max Y
+int minY = 1675;  // runter min Y
+int maxY = 2050;  // hoch max Y
 int speed = 5;
 int pos = minX;    // variable to store the servo position
 
 void setup() {
-  myservoX.attach(2);  // attaches the servo on pin 9 to the servo object
-  myservoY.attach(10);  // attaches the servo on pin 9 to the servo object
+  myservoX.attach(servoXPin);  // attaches the servo on pin 9 to the servo object
+  myservoY.attach(servoYPin);  // attaches the servo on pin 9 to the servo object
   Serial.begin(115200);   // remove comment from this line if you change the Serial port in the next line
   pos = myservoX.readMicroseconds();
 }

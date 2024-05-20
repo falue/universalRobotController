@@ -6,7 +6,7 @@
 
 // OPTIONS
 bool trim = true;     // If true, poti 7,8,9,10 trim LX,LY,RX,RY. If false, those potis are not used.
-int trimRange = 255;  // Plus minus half of that trims LX,LY,RX,RY
+int trimRange = 512;  // Plus minus half of that trims LX,LY,RX,RY
 bool useSecondTransmitter = false;  // Send all btns and switches data over the second transmitter
 
 // USER INPUT -------------------------------------
