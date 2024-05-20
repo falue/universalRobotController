@@ -4,6 +4,15 @@ from matplotlib.widgets import Button, Slider
 from tkinter import filedialog
 from tkinter import Tk
 
+""" 
+    This is a first draft for a curve generator, that would interpolate an axis in a desired way.
+    E.g., the physical, linear potentiometers on the remote could be interpreted as exponential ones.
+    Or follow a very shallow path until the end, where the values skyrocket.
+    This would allow for better/smoother/more custom handling in certain situations.
+
+    This script should output a lookup-table that could be integrated in the tx script.
+"""
+
 class InteractiveCurve:
     def __init__(self):
         # Initial data points
