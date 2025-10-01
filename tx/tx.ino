@@ -320,8 +320,10 @@ void readInputs() {
   userBtn19 = !digitalRead(userBtn19Pin);
 
   if(trim) {
-    joystickLX =map(analogRead(joystickLXPin), 0,1023,1000,2000) + map(analogRead(poti7Pin), 0, 1024, trimRange/2*-1, trimRange/2);
-    joystickLY =map(analogRead(joystickLYPin), 0,1023,1000,2000) + map(analogRead(poti8Pin), 0, 1024, trimRange/2*-1, trimRange/2);
+    joystickLX = map(analogRead(joystickLXPin), 0,1023,1000,2000) + map(analogRead(poti7Pin), 0, 1024, trimRange/2*-1, trimRange/2);
+    joystickLX = constrain(joystickLX, 1000, 2000);  // Values cant be smaller or bigger than 1000/2000
+    joystickLY = map(analogRead(joystickLYPin), 0,1023,1000,2000) + map(analogRead(poti8Pin), 0, 1024, trimRange/2*-1, trimRange/2);
+    joystickLY = constrain(joystickLY, 1000, 2000);  // Values cant be smaller or bigger than 1000/2000
   } else {
     joystickLX = map(analogRead(joystickLXPin), 0,1023,1000,2000);  
     joystickLY = map(analogRead(joystickLYPin), 0,1023,1000,2000);  
@@ -331,7 +333,9 @@ void readInputs() {
 
   if(trim) {
     joystickRX =map(analogRead(joystickRXPin), 0,1023,1000,2000) + map(analogRead(poti9Pin), 0, 1024, trimRange/2*-1, trimRange/2);
+    joystickRX = constrain(joystickRX, 1000, 2000);  // Values cant be smaller or bigger than 1000/2000
     joystickRY =map(analogRead(joystickRYPin), 0,1023,1000,2000) + map(analogRead(poti10Pin), 0, 1024, trimRange/2*-1, trimRange/2);
+    joystickRY = constrain(joystickRY, 1000, 2000);  // Values cant be smaller or bigger than 1000/2000
   } else {
     joystickRX = map(analogRead(joystickRXPin), 0,1023,1000,2000);  
     joystickRY = map(analogRead(joystickRYPin), 0,1023,1000,2000);  
