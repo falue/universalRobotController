@@ -419,6 +419,57 @@ void printSignals() {
   Serial.println("");
 }
 
+void debugTransmittedValues(int* data, int dataSize) {
+  // Print exactly what we're about to transmit
+  Serial.print("TX Array: ");
+  for(int i = 0; i < dataSize; i++) {
+    Serial.print("Ch");
+    Serial.print(i);
+    Serial.print("=");
+    Serial.print(data[i]);
+    
+    // Show if value will be constrained
+    if(data[i] < 1000 || data[i] > 2000) {
+      Serial.print("[!");
+      Serial.print(constrain(data[i], 1000, 2000));
+      Serial.print("!]");
+    }
+    
+    if(i < dataSize - 1) Serial.print(" | ");
+  }
+  Serial.println("");
+}
+
+void sendSignal(int transmitterPin, int* data, int dataSize) {
+  // *** PPM Signal for DRX SR 12T Receiver ***
+  // Standard PPM: Fixed HIGH pulse (500μs), variable LOW period
+  // Total period per channel = data[i] microseconds
+  int gap = 500;
+  int longGap = 1000;  // Sync gap to mark end of frame
+
+  for(int i = 0; i < dataSize; i++) {
+    // Constrain to valid range: CRITICAL for preventing channel corruption
+    int constrainedValue = constrain(data[i], 1000, 2000);
+    
+    digitalWrite(transmitterPin, HIGH);
+    delayMicroseconds(gap);  // Fixed 500μs HIGH pulse
+    digitalWrite(transmitterPin, LOW);
+    // Variable LOW period completes the channel value timing
+    delayMicroseconds(constrainedValue - gap);  // data[i] - 500μs
+  }
+
+  if(dataSize > 0) {
+    if(transmitterPin == transmitter1PpmPin) analogWrite(tx1LEDPin, ledBrightness/2);
+    if(transmitterPin == transmitter2PpmPin) analogWrite(tx2LEDPin, ledBrightness/2);
+    // Send sync pulse
+    digitalWrite(transmitterPin, HIGH);
+    delayMicroseconds(gap);
+    digitalWrite(transmitterPin, LOW);
+    delayMicroseconds(longGap);  // Longer gap to mark end of frame
+  }
+}
+
+/*
 void sendSignal(int transmitterPin, int* data, int dataSize) {
   // *** MAGIC ***
   // Same function for both transmitters
@@ -443,6 +494,7 @@ void sendSignal(int transmitterPin, int* data, int dataSize) {
     delayMicroseconds(longGap);  // Longer gap to mark end of signal
   }
 }
+*/
 
 void catchSystemButtons() {
   /* 
