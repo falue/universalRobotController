@@ -266,10 +266,21 @@ void loop() {
     }
   } else if(steeringLayout == "maxControl") {
     // Use one joystick with one joyBtn, max use of buttons, switches and potis
+    int encodedButtons1 = encodeButtons(joyBtnL,toggleSwitch1,toggleSwitch2,toggleSwitch3);
+    int encodedButtons2 = encodeButtons(toggleSwitch4,userBtn1,userBtn2,userBtn3);  // KILLED: userBtn4,userBtn5,userBtn6,userBtn7);
+    // ignore chn3 (send defauklt value)
+    int octave1[] = {joystickLX, joystickLY, joystickLZ, 1500, encodedButtons1, encodedButtons2, poti1, poti2, poti3, poti4 };
+    /*
+    this should be it - but chn0 interferes with ch3, somehow???
     int encodedButtons0 = encodeButtons(toggleSwitch1,toggleSwitch2,toggleSwitch3,toggleSwitch4);
     int encodedButtons1 = encodeButtons(joyBtnL,userBtn1,userBtn2,userBtn3);
     int encodedButtons2 = encodeButtons(userBtn4,userBtn5,userBtn6,userBtn7);
-    int octave1[] = {joystickLX, joystickLY, joystickLZ, encodedButtons0, encodedButtons1, encodedButtons2, poti1, poti2, poti3, poti4 };
+    int octave1[] = {joystickLX, joystickLY, joystickLZ, encodedButtons0, encodedButtons1, encodedButtons2, poti1, poti2, poti3, poti4 };*/
+    
+    /* if(DEBUG) {
+      debugTransmittedValues(octave1, 10);
+    } */
+    
     sendSignal(transmitter1PpmPin, octave1, 10); 
   }
 
