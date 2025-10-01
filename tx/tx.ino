@@ -370,6 +370,13 @@ void printSignals() {
   Serial.print(joyBtnL ? "🟢" : "⚫"); Serial.print("\t");
   // ^^ This is the last print that "Serial Plotter" can handle
 
+  if(trim) {
+    Serial.print("("); Serial.print(analogRead(poti7Pin)); Serial.print(")\t");
+    Serial.print("("); Serial.print(analogRead(poti8Pin)); Serial.print(")\t");
+    Serial.print("("); Serial.print(analogRead(poti9Pin)); Serial.print(")\t");
+    Serial.print("("); Serial.print(analogRead(poti10Pin)); Serial.print(")\t");
+  }
+
   Serial.print(joyBtnR ? "🟢" : "⚫"); Serial.print("\t");
   Serial.print(toggleSwitch1 ? "🟢" : "⚫"); Serial.print("\t");
   Serial.print(toggleSwitch2 ? "🟢" : "⚫"); Serial.print("\t");
